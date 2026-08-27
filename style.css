@@ -92,10 +92,11 @@ body {
 
 /* Content List */
 .content-container {
-    height: 400px; /* Fixed height but scaled to fit sleek items */
+    max-height: 310px;
     overflow: hidden;
     display: flex;
     background: transparent;
+    padding-bottom: 5px;
 }
 
 .items-list {
