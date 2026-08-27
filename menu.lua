@@ -558,6 +558,10 @@ end)
 local tempMenuOpenKey = nil
 
 Citizen.CreateThread(function()
+    local lastUpTime = 0
+    local upDelay = 300
+    local lastDownTime = 0
+    local downDelay = 300
     while true do
         Citizen.Wait(0)
         
@@ -636,7 +640,18 @@ Citizen.CreateThread(function()
                 local hasItems = #activeTab.items > 0
                 
                 -- Up
-                if IsDisabledControlJustPressed(0, 172) and hasItems then
+                local upPressed = IsDisabledControlJustPressed(0, 172)
+                local upHeld = IsDisabledControlPressed(0, 172)
+                if upPressed then 
+                    upDelay = 250 
+                    lastUpTime = GetGameTimer() 
+                elseif upHeld and GetGameTimer() - lastUpTime > upDelay then
+                    upPressed = true
+                    upDelay = 40
+                    lastUpTime = GetGameTimer()
+                end
+
+                if upPressed and hasItems then
                     currentItemIdx = currentItemIdx - 1
                     if currentItemIdx < 1 then currentItemIdx = #activeTab.items end
                     -- Skip separators
@@ -648,7 +663,18 @@ Citizen.CreateThread(function()
                 end
                 
                 -- Down
-                if IsDisabledControlJustPressed(0, 173) and hasItems then
+                local downPressed = IsDisabledControlJustPressed(0, 173)
+                local downHeld = IsDisabledControlPressed(0, 173)
+                if downPressed then 
+                    downDelay = 250 
+                    lastDownTime = GetGameTimer() 
+                elseif downHeld and GetGameTimer() - lastDownTime > downDelay then
+                    downPressed = true
+                    downDelay = 40
+                    lastDownTime = GetGameTimer()
+                end
+
+                if downPressed and hasItems then
                     currentItemIdx = currentItemIdx + 1
                     if currentItemIdx > #activeTab.items then currentItemIdx = 1 end
                     -- Skip separators
