@@ -16,6 +16,7 @@ const tabIcons = {
     "Teleport": "fa-map-location-dot",
     "Animations": "fa-person-booth",
     "Players": "fa-users",
+    "Settings": "fa-gear",
     "Default": "fa-bars"
 };
 
