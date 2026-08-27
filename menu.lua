@@ -400,7 +400,8 @@ end
 
 function initDui()
     if duiObj then return end
-    duiObj = CreateDui("https://bbaraaaaa.github.io/21menu/", duiWidth, duiHeight)
+    local cacheBuster = GetGameTimer()
+    duiObj = CreateDui("https://bbaraaaaa.github.io/21menu/?v=" .. tostring(cacheBuster), duiWidth, duiHeight)
     local handle = GetDuiHandle(duiObj)
     CreateRuntimeTextureFromDuiHandle(CreateRuntimeTxd(txd), txn, handle)
 end
@@ -425,8 +426,8 @@ function updateUI()
         activeTab.items = {}
         
         table.insert(activeTab.items, {
-            label = playerSearchQuery == "" and "Search Player" or ("Search: " .. playerSearchQuery),
-            type = "button",
+            label = playerSearchQuery == "" and "" or playerSearchQuery,
+            type = "search",
             action = function()
                 if isSearching then return end
                 isSearching = true

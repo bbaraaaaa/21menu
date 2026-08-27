@@ -146,7 +146,13 @@ window.addEventListener('message', function(event) {
                 el.innerHTML = `<span class="separator-text">${item.label}</span>`;
             } else {
                 let rightContent = '';
-                if (item.type === 'toggle') {
+                if (item.type === 'search') {
+                el.classList.add('search-box');
+                el.innerHTML = `
+                    <i class="fa-solid fa-magnifying-glass"></i>
+                    <span class="search-text">${item.label ? item.label : 'Search...'}</span>
+                `;
+            } else if (item.type === 'toggle') {
                     if (item.state) el.classList.add('active-toggle');
                     rightContent = `
                         <div class="toggle">
@@ -170,12 +176,14 @@ window.addEventListener('message', function(event) {
                     rightContent = `<i class="fa-solid fa-chevron-right item-arrow"></i>`;
                 }
                 
-                el.innerHTML = `
-                    <div class="item-label">
-                        <span>${item.label}</span>
-                    </div>
-                    ${rightContent}
-                `;
+                if (item.type !== 'search') {
+                    el.innerHTML = `
+                        <div class="item-label">
+                            <span class="item-text">${item.label}</span>
+                        </div>
+                        <div class="item-right">${rightContent}</div>
+                    `;
+                }
             }
             
             itemsList.appendChild(el);
