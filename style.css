@@ -1,12 +1,12 @@
 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap');
 
 :root {
-    --bg-color: rgba(0, 0, 0, 0.85);
-    --bg-selected: rgba(255, 255, 255, 0.05);
+    --bg-color: rgba(10, 10, 10, 0.75);
+    --bg-selected: rgba(255, 255, 255, 0.1);
     --primary-color: #ffffff;
     --text-main: #eaeaea;
     --text-muted: #888888;
-    --border-color: #222222;
+    --border-color: #333333;
     
     --menu-width: 15.5vw;
     --menu-x: 1.5vw;
@@ -40,8 +40,8 @@ body {
     transform: translateX(30px) scale(0.98);
     opacity: 0;
     transition: all 0.2s cubic-bezier(0.25, 1, 0.5, 1);
-    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.8);
-    border: 1px solid rgba(255, 255, 255, 0.08);
+    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.3); /* Softer shadow to remove the huge black aura */
+    border: 1px solid rgba(255, 255, 255, 0.12); /* Slightly brighter border */
 }
 
 .menu-container.show {
