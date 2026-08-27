@@ -109,20 +109,10 @@ window.addEventListener('message', function(event) {
         });
         
         // Render Items
-        itemsList.innerHTML = '';
-        
-        // Pagination logic
-        const maxItems = data.maxItemsPerPage || 10;
-        let startIndex = 0;
-        let endIndex = data.items.length - 1;
-        
-        if (data.items.length > maxItems) {
-            startIndex = Math.max(0, data.selectedIndex - Math.floor(maxItems / 2));
-            if (startIndex + maxItems > data.items.length) {
-                startIndex = data.items.length - maxItems;
-            }
-            endIndex = startIndex + maxItems - 1;
-        }
+        let selectorBox = document.getElementById('selector-box');
+        Array.from(itemsList.children).forEach(child => {
+            if (child.id !== 'selector-box') child.remove();
+        });
         
         // Render Footer Page
         const selectedItemData = data.items[data.selectedIndex];
@@ -131,14 +121,16 @@ window.addEventListener('message', function(event) {
         const footerTextEl = document.querySelector('.footer-text');
         if (footerTextEl) footerTextEl.innerText = '21 | discord.gg/2121' + bindHint;
         
-        let previousSelection = itemsList.querySelector('.selected');
+        let previousSelection = document.querySelector('.selected');
+        let currentSelectedDOM = null;
         
-        for (let i = startIndex; i <= endIndex; i++) {
+        for (let i = 0; i < data.items.length; i++) {
             const item = data.items[i];
             const el = document.createElement('div');
             el.className = 'item';
             if (i === data.selectedIndex) {
                 el.classList.add('selected');
+                currentSelectedDOM = el;
                 if (!previousSelection || previousSelection.dataset.index != i) {
                     playSound('click'); // Play nav sound if selection changed
                 }
@@ -193,6 +185,20 @@ window.addEventListener('message', function(event) {
             }
             
             itemsList.appendChild(el);
+        }
+
+        // Update selector box position and scroll container smoothly
+        if (currentSelectedDOM && selectorBox) {
+            selectorBox.style.display = 'block';
+            selectorBox.style.top = currentSelectedDOM.offsetTop + 'px';
+            selectorBox.style.height = currentSelectedDOM.offsetHeight + 'px';
+            
+            // Scroll logic (center the selected item)
+            let contentContainer = document.getElementById('content-container');
+            if (contentContainer) {
+                let offset = currentSelectedDOM.offsetTop - (contentContainer.clientHeight / 2) + (currentSelectedDOM.clientHeight / 2);
+                contentContainer.scrollTo({ top: Math.max(0, offset), behavior: 'smooth' });
+            }
         }
     }
 });

@@ -96,16 +96,37 @@ body {
 /* Content List */
 .content-container {
     max-height: 310px;
-    overflow: hidden;
+    overflow-y: auto;
+    overflow-x: hidden;
+    scroll-behavior: smooth;
     display: flex;
     background: transparent;
     padding-bottom: 5px;
+}
+/* Hide scrollbar */
+.content-container::-webkit-scrollbar {
+    display: none;
 }
 
 .items-list {
     flex: 1;
     display: flex;
     flex-direction: column;
+    position: relative;
+}
+
+.selector-box {
+    position: absolute;
+    left: 0;
+    top: 0;
+    width: 100%;
+    height: 38px; /* Default height, gets updated via JS */
+    background: linear-gradient(90deg, rgba(255, 26, 26, 0.15) 0%, rgba(0, 0, 0, 0) 100%);
+    border-left: 3px solid var(--primary-color);
+    z-index: 0;
+    transition: top 0.15s cubic-bezier(0.2, 0.8, 0.2, 1), height 0.15s ease;
+    pointer-events: none;
+    display: none;
 }
 
 .item {
@@ -117,14 +138,13 @@ body {
     font-size: 12.5px;
     font-weight: 600;
     border-bottom: 1px solid rgba(255, 255, 255, 0.02);
-    border-left: 3px solid transparent;
-    transition: background 0.1s ease;
+    position: relative;
+    z-index: 1;
+    transition: all 0.15s ease;
 }
 
 .item.selected {
-    background: linear-gradient(90deg, rgba(255, 26, 26, 0.15) 0%, rgba(0, 0, 0, 0) 100%);
-    border-left: 3px solid var(--primary-color);
-    padding-left: 14px;
+    padding-left: 17px; /* Slight indent when selected for effect */
 }
 
 .item-label {
