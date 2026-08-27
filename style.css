@@ -364,8 +364,7 @@ body {
 .keybind-overlay {
     position: absolute;
     top: 0; left: 0; width: 100vw; height: 100vh;
-    background: rgba(0,0,0,0.85); /* Deep backdrop */
-    backdrop-filter: blur(5px);
+    background: rgba(0,0,0,0.4); /* Lighter backdrop, NO blur to prevent FiveM black screen bug */
     display: flex;
     align-items: center;
     justify-content: center;
