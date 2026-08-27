@@ -691,6 +691,8 @@ Citizen.CreateThread(function()
             
             if menuOpen and not waitingForKey and not isSearching then
                 -- Disable controls while menu is open to prevent game conflicts
+                DisableControlAction(0, 1, true) -- LookLeftRight (Mouse)
+                DisableControlAction(0, 2, true) -- LookUpDown (Mouse)
                 DisableControlAction(0, 24, true) -- Attack
                 DisableControlAction(0, 25, true) -- Aim
                 DisableControlAction(0, 44, true) -- Q (Cover)
