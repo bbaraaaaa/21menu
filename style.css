@@ -37,15 +37,15 @@ body {
     border-radius: var(--border-radius);
     background: rgba(10, 10, 10, 0.90); /* Darker since we can't use blur */
     overflow: hidden;
-    transform: translateX(30px) scale(0.98);
+    transform: translateY(-20px) scale(0.95);
     opacity: 0;
-    transition: all 0.2s cubic-bezier(0.25, 1, 0.5, 1);
-    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.3); /* Softer shadow to remove the huge black aura */
-    border: 1px solid rgba(255, 255, 255, 0.12); /* Slightly brighter border */
+    transition: all 0.3s cubic-bezier(0.2, 0.8, 0.2, 1);
+    box-shadow: 0 0 10px rgba(0, 0, 0, 0.5), inset 0 0 10px rgba(255, 255, 255, 0.05); /* Outer and inner shadow */
+    border: 1px solid rgba(255, 255, 255, 0.15); /* Slightly brighter border */
 }
 
 .menu-container.show {
-    transform: translateX(0) scale(1);
+    transform: translateY(0) scale(1);
     opacity: 1;
 }
 
@@ -91,14 +91,15 @@ body {
     font-size: 10px;
     font-weight: 600;
     border-radius: 4px;
-    transition: all 0.15s ease;
-    border: 1px solid transparent;
+    transition: all 0.2s ease;
+    border-bottom: 2px solid transparent;
 }
 
 .tab.active {
     color: #ffffff;
-    background: rgba(255, 255, 255, 0.1);
-    border: 1px solid rgba(255, 255, 255, 0.15);
+    background: linear-gradient(0deg, rgba(255,255,255,0.05) 0%, transparent 100%);
+    border-bottom: 2px solid #ffffff;
+    text-shadow: 0 0 5px rgba(255,255,255,0.3);
 }
 
 .tab i {
@@ -126,8 +127,9 @@ body {
     background: transparent;
 }
 .content-container::-webkit-scrollbar-thumb {
-    background: rgba(255, 255, 255, 0.5);
+    background: #ffffff;
     border-radius: 2px;
+    box-shadow: 0 0 5px rgba(255, 255, 255, 0.8);
 }
 
 .items-list {
@@ -146,14 +148,19 @@ body {
     top: 4px; /* Default */
     width: calc(100% - 8px);
     height: 35px; /* Default */
-    background: linear-gradient(90deg, rgba(255, 255, 255, 0.15) 0%, rgba(255, 255, 255, 0.0) 100%);
     border: none;
     border-left: 3px solid #ffffff;
     border-radius: 4px;
     z-index: 0;
-    transition: top 0.25s cubic-bezier(0.25, 1, 0.5, 1), height 0.25s ease; /* Made smoother and slightly slower */
+    transition: top 0.25s cubic-bezier(0.25, 1, 0.5, 1), height 0.25s ease;
     pointer-events: none;
     display: none;
+    animation: pulseGradient 2s infinite alternate;
+}
+
+@keyframes pulseGradient {
+    0% { background: linear-gradient(90deg, rgba(255, 255, 255, 0.15) 0%, rgba(255, 255, 255, 0.0) 100%); }
+    100% { background: linear-gradient(90deg, rgba(255, 255, 255, 0.25) 0%, rgba(255, 255, 255, 0.0) 100%); }
 }
 
 .item {
