@@ -13,6 +13,9 @@ const tabIcons = {
     "Vehicle": "fa-car",
     "Weapons": "fa-gun",
     "Visuals": "fa-eye",
+    "Teleport": "fa-map-location-dot",
+    "Animations": "fa-person-booth",
+    "Players": "fa-users",
     "Default": "fa-bars"
 };
 
