@@ -368,3 +368,6 @@ body {
 }
 
 .item.search-box { background: rgba(0,0,0,0.4); border: 1px solid #333; margin: 5px 15px; padding: 10px; border-radius: 6px; display: flex; align-items: center; gap: 10px; color: #888; font-style: italic; } .item.search-box.selected { border-color: #fff; background: rgba(255,255,255,0.1); color: #fff; } .search-text { font-size: 0.9em; }
+
+/* Bind Badge */
+.bind-badge { background: rgba(255,255,255,0.1); color: #fff; font-size: 10px; padding: 2px 5px; border-radius: 4px; margin-left: 8px; border: 1px solid rgba(255,255,255,0.2); font-weight: 700; }

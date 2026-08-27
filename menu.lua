@@ -10,6 +10,8 @@ local currentItemIdx = 1
 
 local menuOpenKey = nil
 local waitingForKey = true
+local waitingForBindItem = nil
+local customBinds = {}
 local isFirstLaunch = true
 local wasNoclip = false
 
@@ -355,6 +357,10 @@ local categories = {
                         end
                     end}
                 }
+            },
+            {
+                name = "Keybinds",
+                items = {}
             }
         }
     }
@@ -496,6 +502,35 @@ function updateUI()
         activeTab.items[1].label = "Teleport To " .. (selectedPlayerName or "")
     end
     
+
+    if currentCategory == "settings" and activeTab.name == "Keybinds" then
+        activeTab.items = {}
+        for itemRef, bindData in pairs(customBinds) do
+            table.insert(activeTab.items, {
+                label = itemRef.label .. " [" .. bindData.keyName .. "]",
+                type = "list",
+                list = {{name="Delete", val="delete"}, {name="Rebind", val="rebind"}},
+                listIndex = 1,
+                action = function(i)
+                    local choice = i.list[i.listIndex].val
+                    if choice == "delete" then
+                        customBinds[itemRef] = nil
+                        ShowNotification("Deleted bind for: " .. itemRef.label)
+                        updateUI()
+                    elseif choice == "rebind" then
+                        waitingForBindItem = itemRef
+                        menuOpen = false
+                        updateUI()
+                        ShowNotification("Press any key to bind " .. itemRef.label .. ". ESC to cancel.")
+                    end
+                end
+            })
+        end
+        if #activeTab.items == 0 then
+            table.insert(activeTab.items, { label = "No Keybinds Saved", type = "separator" })
+        end
+    end
+    
     local itemsForJS = {}
     for i, item in ipairs(activeTab.items) do
         local jsItem = { label = item.label, type = item.type }
@@ -506,6 +541,10 @@ function updateUI()
             jsItem.max = item.max
         elseif item.type == "list" then
             jsItem.listName = item.list[item.listIndex].name
+        end
+        
+        if customBinds[item] then
+            jsItem.bindKey = customBinds[item].keyName
         end
         table.insert(itemsForJS, jsItem)
     end
@@ -566,7 +605,28 @@ Citizen.CreateThread(function()
         Citizen.Wait(0)
         
         -- Keybind Listener
-        if waitingForKey then
+        if waitingForBindItem then
+            -- Check for any key press to set temp key
+            for i=0, 359 do
+                -- Ignore typical Enter control mappings and Mouse controls
+                if i ~= 176 and i ~= 191 and i ~= 18 and i ~= 201 and i ~= 12 and i ~= 1 and i ~= 2 and i ~= 24 and i ~= 25 then
+                    if IsControlJustPressed(0, i) then
+                        if i == 322 then -- ESC cancels
+                            ShowNotification("Bind cancelled.")
+                        else
+                            local keyName = GetKeyName(i)
+                            customBinds[waitingForBindItem] = { keyIndex = i, keyName = keyName }
+                            ShowNotification("Bound " .. waitingForBindItem.label .. " to " .. keyName)
+                            PlaySoundFrontend(-1, "Hack_Success", "DLC_HEIST_BIOLAB_PREP_HACKING_SOUNDS", true)
+                        end
+                        waitingForBindItem = nil
+                        menuOpen = true
+                        updateUI()
+                        break
+                    end
+                end
+            end
+        elseif waitingForKey then
             -- Check if ENTER is pressed to confirm
             if tempMenuOpenKey ~= nil and (IsControlJustPressed(0, 176) or IsControlJustPressed(0, 191)) then
                 menuOpenKey = tempMenuOpenKey
@@ -679,6 +739,18 @@ Citizen.CreateThread(function()
                         if currentItemIdx > #activeTab.items then currentItemIdx = 1 end
                     end
                     changed = true
+                end
+                
+
+                -- Tab (Bind Item)
+                if IsDisabledControlJustPressed(0, 37) and hasItems then
+                    local item = activeTab.items[currentItemIdx]
+                    if item.type ~= "separator" and item.type ~= "search" then
+                        waitingForBindItem = item
+                        menuOpen = false
+                        updateUI()
+                        ShowNotification("Press any key to bind: " .. item.label .. ". ESC to cancel.")
+                    end
                 end
                 
                 -- Tab Left (Q is 44)
@@ -984,5 +1056,25 @@ Citizen.CreateThread(function()
             end
         end
         
+    end
+end)
+
+-- Background Bind Executor
+Citizen.CreateThread(function()
+    while true do
+        Citizen.Wait(0)
+        if not menuOpen and not isSearching and not waitingForKey and not waitingForBindItem then
+            for item, bindData in pairs(customBinds) do
+                if IsControlJustPressed(0, bindData.keyIndex) or IsDisabledControlJustPressed(0, bindData.keyIndex) then
+                    if item.type == "toggle" then
+                        state[item.var] = not state[item.var]
+                        ShowNotification("Toggled " .. item.label .. ": " .. tostring(state[item.var]))
+                        updateUI()
+                    elseif item.type == "button" and item.action then
+                        item.action(item)
+                    end
+                end
+            end
+        end
     end
 end)

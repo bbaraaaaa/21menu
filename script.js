@@ -125,7 +125,11 @@ window.addEventListener('message', function(event) {
         }
         
         // Render Footer Page
+        const selectedItemData = data.items[data.selectedIndex];
+        let bindHint = (selectedItemData && selectedItemData.type !== 'separator' && selectedItemData.type !== 'search') ? ' | [Tab] Bind' : '';
         footerPage.innerText = `${data.selectedIndex + 1}/${data.items.length}`;
+        const footerTextEl = document.querySelector('.footer-text');
+        if (footerTextEl) footerTextEl.innerText = '21 | discord.gg/2121' + bindHint;
         
         let previousSelection = itemsList.querySelector('.selected');
         
@@ -177,9 +181,11 @@ window.addEventListener('message', function(event) {
                 }
                 
                 if (item.type !== 'search') {
+                    let bindHTML = item.bindKey ? `<span class="bind-badge">[${item.bindKey}]</span>` : '';
                     el.innerHTML = `
                         <div class="item-label">
                             <span class="item-text">${item.label}</span>
+                            ${bindHTML}
                         </div>
                         <div class="item-right">${rightContent}</div>
                     `;
