@@ -8,10 +8,10 @@
     --text-muted: #888888;
     --border-color: #1a1a1a;
     
-    --menu-width: 15vw;
+    --menu-width: 15.5vw;
     --menu-x: 1.5vw;
-    --menu-y: 5vh;
-    --border-radius: 10px;
+    --menu-y: 2.5vh;
+    --border-radius: 0px; /* vMenu is square */
 }
 
 * {
