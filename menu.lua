@@ -632,9 +632,11 @@ Citizen.CreateThread(function()
                 menuOpenKey = tempMenuOpenKey
                 waitingForKey = false
                 tempMenuOpenKey = nil
+                menuOpen = false
                 if duiObj then
                     SendDuiMessage(duiObj, json.encode({ action = "showKeybind", show = false }))
                 end
+                updateUI()
                 ShowNotification("Menu bind set! Key ID: " .. menuOpenKey)
                 PlaySoundFrontend(-1, "Hack_Success", "DLC_HEIST_BIOLAB_PREP_HACKING_SOUNDS", true)
                 
@@ -646,9 +648,11 @@ Citizen.CreateThread(function()
                 menuOpenKey = 121
                 waitingForKey = false
                 tempMenuOpenKey = nil
+                menuOpen = false
                 if duiObj then
                     SendDuiMessage(duiObj, json.encode({ action = "showKeybind", show = false }))
                 end
+                updateUI()
                 ShowNotification("Bind cancelled. Assigned default key (Insert).")
                 PlaySoundFrontend(-1, "CANCEL", "HUD_FRONTEND_DEFAULT_SOUNDSET", true)
                 if isFirstLaunch then
