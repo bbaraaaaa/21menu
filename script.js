@@ -72,11 +72,11 @@ window.addEventListener('message', function(event) {
         showToast(data.message);
         return;
     }
-    
     if (data.action === 'showKeybind') {
         if (data.show) {
             keybindOverlay.style.display = 'flex';
-            document.querySelector('.keybind-btn').innerText = 'Waiting...';
+            document.querySelector('.keybind-btn').innerText = data.text || 'Waiting...';
+            document.querySelector('.keybind-prompt').innerText = data.promptText || 'Enter Menu Open Key ...';
         } else {
             keybindOverlay.style.display = 'none';
         }

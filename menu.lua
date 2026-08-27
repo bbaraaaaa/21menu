@@ -61,9 +61,19 @@ function GetNearbyPlayers()
     return players
 end
 
+local keyNames = {
+    [38] = "E", [288] = "F1", [289] = "F2", [170] = "F3", [166] = "F5", 
+    [121] = "INSERT", [213] = "HOME", [244] = "M", [44] = "Q",
+    [176] = "ENTER", [191] = "ENTER", [172] = "UP ARROW", [173] = "DOWN ARROW",
+    [174] = "LEFT ARROW", [175] = "RIGHT ARROW", [177] = "BACKSPACE",
+    [32] = "W", [33] = "S", [34] = "A", [35] = "D", [22] = "SPACE"
+}
+
+function GetKeyName(val)
+    return keyNames[val] or ("Key ID: " .. val)
+end
+
 local tabs = {
-    {
-        name = "Player",
         items = {
             {label = "Heal", type = "button", action = function() SetEntityHealth(PlayerPedId(), 200) ShowNotification("Healed!") end},
             {label = "Armor", type = "button", action = function() AddArmourToPed(PlayerPedId(), 100) ShowNotification("Max Armor Given!") end},
@@ -340,6 +350,8 @@ Citizen.CreateThread(function()
     end
 end)
 
+local tempMenuOpenKey = nil
+
 Citizen.CreateThread(function()
     while true do
         Citizen.Wait(0)
@@ -349,19 +361,49 @@ Citizen.CreateThread(function()
             -- Check for any key press
             for i=0, 359 do
                 if IsControlJustPressed(0, i) then
-                    menuOpenKey = i
-                    waitingForKey = false
-                    if duiObj then
-                        SendDuiMessage(duiObj, json.encode({ action = "showKeybind", show = false }))
-                    end
-                    ShowNotification("Menu bind set! Key ID: " .. i)
-                    
-                    if isFirstLaunch then
-                        isFirstLaunch = false
-                        if not menuOpen then
-                            Citizen.SetTimeout(500, function()
-                                if not menuOpen then destroyDui() end
-                            end)
+                    if tempMenuOpenKey == nil then
+                        tempMenuOpenKey = i
+                        local keyName = GetKeyName(i)
+                        if duiObj then
+                            SendDuiMessage(duiObj, json.encode({ 
+                                action = "showKeybind", 
+                                show = true,
+                                promptText = "Press ENTER to confirm: " .. keyName,
+                                text = keyName
+                            }))
+                        end
+                        PlaySoundFrontend(-1, "SELECT", "HUD_FRONTEND_DEFAULT_SOUNDSET", true)
+                    else
+                        if i == 176 or i == 191 then -- ENTER
+                            menuOpenKey = tempMenuOpenKey
+                            waitingForKey = false
+                            tempMenuOpenKey = nil
+                            if duiObj then
+                                SendDuiMessage(duiObj, json.encode({ action = "showKeybind", show = false }))
+                            end
+                            ShowNotification("Menu bind set! Key ID: " .. menuOpenKey)
+                            PlaySoundFrontend(-1, "Hack_Success", "DLC_HEIST_BIOLAB_PREP_HACKING_SOUNDS", true)
+                            
+                            if isFirstLaunch then
+                                isFirstLaunch = false
+                                if not menuOpen then
+                                    Citizen.SetTimeout(500, function()
+                                        if not menuOpen then destroyDui() end
+                                    end)
+                                end
+                            end
+                        else
+                            tempMenuOpenKey = i
+                            local keyName = GetKeyName(i)
+                            if duiObj then
+                                SendDuiMessage(duiObj, json.encode({ 
+                                    action = "showKeybind", 
+                                    show = true,
+                                    promptText = "Press ENTER to confirm: " .. keyName,
+                                    text = keyName
+                                }))
+                            end
+                            PlaySoundFrontend(-1, "SELECT", "HUD_FRONTEND_DEFAULT_SOUNDSET", true)
                         end
                     end
                     break
