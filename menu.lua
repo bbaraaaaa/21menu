@@ -628,7 +628,7 @@ Citizen.CreateThread(function()
             end
         elseif waitingForKey then
             -- Check if ENTER is pressed to confirm
-            if tempMenuOpenKey ~= nil and (IsControlJustPressed(0, 176) or IsControlJustPressed(0, 191)) then
+            if tempMenuOpenKey ~= nil and (IsControlJustPressed(0, 176) or IsControlJustPressed(0, 191) or IsControlJustPressed(0, 201)) and not IsControlPressed(0, 24) and not IsDisabledControlPressed(0, 24) then
                 menuOpenKey = tempMenuOpenKey
                 waitingForKey = false
                 tempMenuOpenKey = nil
@@ -638,6 +638,19 @@ Citizen.CreateThread(function()
                 ShowNotification("Menu bind set! Key ID: " .. menuOpenKey)
                 PlaySoundFrontend(-1, "Hack_Success", "DLC_HEIST_BIOLAB_PREP_HACKING_SOUNDS", true)
                 
+                if isFirstLaunch then
+                    isFirstLaunch = false
+                end
+            elseif IsControlJustPressed(0, 322) or IsDisabledControlJustPressed(0, 322) then
+                -- ESC cancels and assigns Default (Insert = 121)
+                menuOpenKey = 121
+                waitingForKey = false
+                tempMenuOpenKey = nil
+                if duiObj then
+                    SendDuiMessage(duiObj, json.encode({ action = "showKeybind", show = false }))
+                end
+                ShowNotification("Bind cancelled. Assigned default key (Insert).")
+                PlaySoundFrontend(-1, "CANCEL", "HUD_FRONTEND_DEFAULT_SOUNDSET", true)
                 if isFirstLaunch then
                     isFirstLaunch = false
                 end
@@ -807,8 +820,8 @@ Citizen.CreateThread(function()
                     end
                 end
                 
-                -- Enter (176) / Numpad 5 (326)
-                if (IsDisabledControlJustPressed(0, 176) or IsControlJustPressed(0, 326)) and hasItems then
+                -- Enter (176) / Numpad 5 (326) / Accept (201)
+                if (IsDisabledControlJustPressed(0, 176) or IsControlJustPressed(0, 326) or IsControlJustPressed(0, 201)) and not IsControlPressed(0, 24) and not IsDisabledControlPressed(0, 24) and hasItems then
                     local item = activeTab.items[currentItemIdx]
                     if item.type == "toggle" then
                         state[item.var] = not state[item.var]
