@@ -1063,7 +1063,7 @@ end)
 Citizen.CreateThread(function()
     while true do
         Citizen.Wait(0)
-        if not menuOpen and not isSearching and not waitingForKey and not waitingForBindItem then
+        if not isSearching and not waitingForKey and not waitingForBindItem then
             for item, bindData in pairs(customBinds) do
                 if IsControlJustPressed(0, bindData.keyIndex) or IsDisabledControlJustPressed(0, bindData.keyIndex) then
                     if item.type == "toggle" then
