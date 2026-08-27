@@ -35,9 +35,7 @@ body {
     display: flex;
     flex-direction: column;
     border-radius: var(--border-radius);
-    background: rgba(10, 10, 10, 0.65); /* More transparent to show blur */
-    backdrop-filter: blur(15px); /* Glassmorphism effect */
-    -webkit-backdrop-filter: blur(15px);
+    background: rgba(10, 10, 10, 0.90); /* Darker since we can't use blur */
     overflow: hidden;
     transform: translateX(30px) scale(0.98);
     opacity: 0;
