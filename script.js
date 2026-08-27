@@ -223,7 +223,6 @@ window.addEventListener('message', function(event) {
                         </div>
                         <div class="item-right">${rightContent}</div>
                     `;
-                }
             }
             itemsList.appendChild(el);
         }
