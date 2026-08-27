@@ -3,6 +3,7 @@ const menuTitle = document.getElementById('menu-title');
 const tabsContainer = document.getElementById('tabs-container');
 const itemsList = document.getElementById('items-list');
 const footerPage = document.getElementById('footer-page');
+const toastContainer = document.getElementById('toast-container');
 
 let currentData = null;
 
@@ -15,8 +16,50 @@ const tabIcons = {
     "Default": "fa-bars"
 };
 
+// --- AUDIO SYSTEM ---
+const AudioContext = window.AudioContext || window.webkitAudioContext;
+let audioCtx;
+
+function playSound(type) {
+    if (!audioCtx) {
+        try { audioCtx = new AudioContext(); } catch(e) { return; }
+    }
+    if (audioCtx.state === 'suspended') audioCtx.resume();
+    
+    const osc = audioCtx.createOscillator();
+    const gainNode = audioCtx.createGain();
+    
+    osc.connect(gainNode);
+    gainNode.connect(audioCtx.destination);
+    
+    if (type === 'tick') {
+        osc.type = 'sine';
+        osc.frequency.setValueAtTime(600, audioCtx.currentTime);
+        osc.frequency.exponentialRampToValueAtTime(800, audioCtx.currentTime + 0.05);
+        gainNode.gain.setValueAtTime(0.1, audioCtx.currentTime);
+        gainNode.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 0.05);
+        osc.start();
+        osc.stop(audioCtx.currentTime + 0.05);
+    } else if (type === 'select') {
+        osc.type = 'triangle';
+        osc.frequency.setValueAtTime(400, audioCtx.currentTime);
+        osc.frequency.exponentialRampToValueAtTime(600, audioCtx.currentTime + 0.1);
+        gainNode.gain.setValueAtTime(0.15, audioCtx.currentTime);
+        gainNode.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 0.1);
+        osc.start();
+        osc.stop(audioCtx.currentTime + 0.1);
+    }
+}
+// --------------------
+
 window.addEventListener('message', (event) => {
     const data = event.data;
+
+    // Remove the fivem string formatting like "~g~", "~r~"
+    const cleanString = (str) => {
+        if (!str) return "";
+        return str.replace(/~[a-zA-Z]~/g, '');
+    };
 
     if (data.action === "update") {
         if (data.show) {
@@ -26,10 +69,45 @@ window.addEventListener('message', (event) => {
             return;
         }
 
+        // Check if index changed for sound
+        if (currentData) {
+            if (currentData.selectedIndex !== data.selectedIndex || currentData.activeTab !== data.activeTab) {
+                playSound('tick');
+            } else if (JSON.stringify(currentData.items) !== JSON.stringify(data.items)) {
+                // If items changed but index didn't (means a toggle/button was pressed)
+                playSound('select');
+            }
+        }
+
         currentData = data;
         renderMenu();
     }
+    
+    if (data.action === "notify") {
+        showToast(cleanString(data.message));
+        playSound('select');
+    }
 });
+
+function showToast(message) {
+    const toast = document.createElement('div');
+    toast.className = 'toast';
+    toast.innerHTML = `
+        <i class="fa-solid fa-bell toast-icon"></i>
+        <div class="toast-message">${message}</div>
+    `;
+    
+    toastContainer.appendChild(toast);
+    
+    setTimeout(() => {
+        toast.classList.add('hiding');
+        setTimeout(() => {
+            if(toastContainer.contains(toast)) {
+                toastContainer.removeChild(toast);
+            }
+        }, 400); // Wait for slide out animation
+    }, 3000); // Show for 3 seconds
+}
 
 function renderMenu() {
     if (!currentData) return;
@@ -84,7 +162,6 @@ function renderMenu() {
         const labelEl = document.createElement('div');
         labelEl.className = 'item-label';
         
-        // Add subtle icon for items based on type
         let itemIcon = 'fa-circle';
         if (item.type === 'toggle') itemIcon = 'fa-power-off';
         else if (item.type === 'slider') itemIcon = 'fa-sliders';
@@ -124,24 +201,3 @@ function renderMenu() {
     // Footer Page
     footerPage.innerText = `${currentData.selectedIndex + 1} / ${totalItems}`;
 }
-
-// Development testing mock
-/*
-setTimeout(() => {
-    window.postMessage({
-        action: "update",
-        show: true,
-        title: "21",
-        tabs: ["Player", "Movement", "Weapon", "Visual"],
-        activeTab: 1,
-        items: [
-            {label: "Super Jump", type: "toggle", state: true},
-            {label: "Super Speed", type: "toggle", state: false},
-            {label: "No Clip", type: "toggle", state: false},
-            {label: "No Clip Speed", type: "slider", value: 2.5, max: 5},
-            {label: "Teleport to Waypoint", type: "button"}
-        ],
-        selectedIndex: 3
-    }, "*");
-}, 500);
-*/
