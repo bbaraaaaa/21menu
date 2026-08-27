@@ -52,7 +52,7 @@ function playSound(type) {
 function showToast(message) {
     const toast = document.createElement('div');
     toast.className = 'toast';
-    toast.innerHTML = `<span class="toast-message">${message}</span>`;
+    toast.innerHTML = `<i class="fa-solid fa-bell toast-icon"></i><span class="toast-message">${message}</span>`;
     
     toastContainer.appendChild(toast);
     
