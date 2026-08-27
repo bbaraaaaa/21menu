@@ -108,11 +108,19 @@ window.addEventListener('message', function(event) {
             tabsContainer.appendChild(el);
         });
         
-        // Render Items
+        // DOM Reuse Logic for Smooth Scrolling
         let selectorBox = document.getElementById('selector-box');
-        Array.from(itemsList.children).forEach(child => {
-            if (child.id !== 'selector-box') child.remove();
-        });
+        let existingItems = Array.from(itemsList.children).filter(c => c.id !== 'selector-box');
+        
+        let needsFullRender = existingItems.length !== data.items.length;
+        if (!needsFullRender) {
+            for (let i = 0; i < data.items.length; i++) {
+                if ((data.items[i].label || 'search') !== existingItems[i].dataset.label) {
+                    needsFullRender = true;
+                    break;
+                }
+            }
+        }
         
         // Render Footer Page
         const selectedItemData = data.items[data.selectedIndex];
@@ -124,23 +132,28 @@ window.addEventListener('message', function(event) {
         let previousSelection = document.querySelector('.selected');
         let currentSelectedDOM = null;
         
-        for (let i = 0; i < data.items.length; i++) {
-            const item = data.items[i];
-            const el = document.createElement('div');
-            el.className = 'item';
-            if (i === data.selectedIndex) {
-                el.classList.add('selected');
-                currentSelectedDOM = el;
-                if (!previousSelection || previousSelection.dataset.index != i) {
-                    playSound('click'); // Play nav sound if selection changed
-                }
-            }
-            el.dataset.index = i;
+        if (needsFullRender) {
+            existingItems.forEach(child => child.remove());
             
-            if (item.type === 'separator') {
-                el.className = 'item separator-item';
-                el.innerHTML = `<span class="separator-text">${item.label}</span>`;
-            } else {
+            for (let i = 0; i < data.items.length; i++) {
+                const item = data.items[i];
+                const el = document.createElement('div');
+                el.className = 'item';
+                el.dataset.label = item.label || 'search';
+                
+                if (i === data.selectedIndex) {
+                    el.classList.add('selected');
+                    currentSelectedDOM = el;
+                    if (!previousSelection || previousSelection.dataset.index != i) {
+                        playSound('click');
+                    }
+                }
+                el.dataset.index = i;
+                
+                if (item.type === 'separator') {
+                    el.className = 'item separator-item';
+                    el.innerHTML = `<span class="separator-text">${item.label}</span>`;
+                } else {
                 let rightContent = '';
                 if (item.type === 'search') {
                 el.classList.add('search-box');
@@ -182,9 +195,38 @@ window.addEventListener('message', function(event) {
                         <div class="item-right">${rightContent}</div>
                     `;
                 }
+                itemsList.appendChild(el);
             }
-            
-            itemsList.appendChild(el);
+        } else {
+            // Partial Update (DOM Reuse)
+            for (let i = 0; i < data.items.length; i++) {
+                const item = data.items[i];
+                const el = existingItems[i];
+                
+                if (i === data.selectedIndex) {
+                    el.classList.add('selected');
+                    currentSelectedDOM = el;
+                    if (!previousSelection || previousSelection.dataset.index != i) {
+                        playSound('click');
+                    }
+                } else {
+                    el.classList.remove('selected');
+                }
+                
+                if (item.type === 'toggle') {
+                    if (item.state) el.classList.add('active-toggle');
+                    else el.classList.remove('active-toggle');
+                } else if (item.type === 'slider') {
+                    const percent = (item.value / item.max) * 100;
+                    const fill = el.querySelector('.slider-fill');
+                    if (fill) fill.style.width = percent + '%';
+                    const text = el.querySelector('.item-text');
+                    if (text) text.innerText = `${item.label}: ${item.value}`;
+                } else if (item.type === 'list') {
+                    const listVal = el.querySelector('.list-value');
+                    if (listVal) listVal.innerText = `< ${item.listName} >`;
+                }
+            }
         }
 
         // Update selector box position and scroll container smoothly
