@@ -1,26 +1,24 @@
-@import url('https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap');
 
 :root {
-    --bg-color: rgba(12, 12, 14, 0.7);
-    --bg-panel: rgba(20, 20, 24, 0.6);
-    --primary-color: #ff2a2a;
-    --primary-hover: #ff4d4d;
-    --primary-glow: rgba(255, 42, 42, 0.6);
-    --text-main: #f5f5f7;
-    --text-muted: #9a9a9a;
-    --border-color: rgba(255, 255, 255, 0.08);
+    --bg-color: #000000;
+    --bg-selected: #1f1f1f;
+    --primary-color: #ffffff;
+    --text-main: #ffffff;
+    --text-muted: #888888;
+    --border-color: #1a1a1a;
     
-    --menu-width: 24vw;
-    --menu-x: 73vw;
-    --menu-y: 8vh;
-    --border-radius: 12px;
+    --menu-width: 20vw;
+    --menu-x: 75vw;
+    --menu-y: 10vh;
+    --border-radius: 10px;
 }
 
 * {
     box-sizing: border-box;
     margin: 0;
     padding: 0;
-    font-family: 'Outfit', sans-serif;
+    font-family: 'Inter', sans-serif;
     user-select: none;
 }
 
@@ -37,14 +35,11 @@ body {
     display: flex;
     flex-direction: column;
     border-radius: var(--border-radius);
-    box-shadow: 0 20px 50px rgba(0,0,0,0.6), 0 0 0 1px var(--border-color);
     background: var(--bg-color);
-    backdrop-filter: blur(15px);
-    -webkit-backdrop-filter: blur(15px);
     overflow: hidden;
     transform: translateX(50px);
     opacity: 0;
-    transition: all 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+    transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
 .menu-container.show {
@@ -54,157 +49,91 @@ body {
 
 /* Banner */
 .banner {
-    position: relative;
-    height: 90px;
-    background: linear-gradient(135deg, rgba(20,20,20,0.8) 0%, rgba(5,5,5,0.9) 100%);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    border-bottom: 2px solid var(--primary-color);
-    overflow: hidden;
-}
-
-.banner::before {
-    content: '';
-    position: absolute;
-    top: -50%; left: -50%; right: -50%; bottom: -50%;
-    background: radial-gradient(circle at center, var(--primary-glow) 0%, transparent 60%);
-    opacity: 0.3;
-    animation: pulseGlow 4s infinite alternate ease-in-out;
-}
-
-@keyframes pulseGlow {
-    0% { transform: scale(0.8); opacity: 0.2; }
-    100% { transform: scale(1.2); opacity: 0.4; }
-}
-
-.menu-title {
-    color: var(--text-main);
-    font-size: 38px;
-    font-weight: 800;
-    letter-spacing: 4px;
-    text-shadow: 0 0 20px var(--primary-color), 0 0 40px var(--primary-color);
-    z-index: 1;
-    display: flex;
-    align-items: center;
-    gap: 12px;
-}
-
-.menu-title i {
-    font-size: 32px;
-    color: var(--primary-color);
-    filter: drop-shadow(0 0 10px var(--primary-color));
+    width: 100%;
+    height: 120px;
+    background-image: url('banner.jpg');
+    background-size: cover;
+    background-position: center;
+    background-repeat: no-repeat;
 }
 
 /* Tabs */
 .tabs-container {
     display: flex;
-    background: var(--bg-panel);
-    overflow: hidden;
+    background: #0d0d0d;
+    padding: 6px 10px;
+    gap: 8px;
     border-bottom: 1px solid var(--border-color);
-    position: relative;
 }
 
 .tab {
     flex: 1;
     text-align: center;
-    padding: 14px 0;
+    padding: 6px 0;
     color: var(--text-muted);
-    font-size: 13px;
-    font-weight: 600;
-    text-transform: uppercase;
-    letter-spacing: 1px;
-    transition: all 0.3s ease;
-    border-bottom: 2px solid transparent;
-    cursor: default;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    gap: 4px;
-}
-
-.tab i {
-    font-size: 16px;
-    margin-bottom: 2px;
+    font-size: 12px;
+    font-weight: 700;
+    border-radius: 6px;
+    transition: all 0.2s ease;
+    border: 1px solid transparent;
 }
 
 .tab.active {
     color: var(--text-main);
-    border-bottom: 2px solid var(--primary-color);
-    background: linear-gradient(to top, rgba(255, 42, 42, 0.15) 0%, transparent 100%);
-    text-shadow: 0 0 10px rgba(255,255,255,0.3);
+    background: #1a1a1a;
+    border: 1px solid #333;
 }
 
-.tab.active i {
-    color: var(--primary-color);
-    text-shadow: 0 0 10px var(--primary-color);
+.tab i {
+    display: none; /* Hide icons to match ARYA clean text tabs */
 }
 
 /* Content List */
 .content-container {
-    position: relative;
-    max-height: 48vh;
+    max-height: 45vh;
     overflow: hidden;
     display: flex;
+    background: #000000;
 }
 
 .items-list {
     flex: 1;
     display: flex;
     flex-direction: column;
-    padding: 6px 0;
 }
 
 .item {
     display: flex;
     justify-content: space-between;
     align-items: center;
-    padding: 14px 24px;
-    color: var(--text-muted);
-    font-size: 15px;
-    font-weight: 500;
-    transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
-    position: relative;
-    margin: 2px 10px;
-    border-radius: 8px;
+    padding: 12px 16px;
+    color: var(--text-main);
+    font-size: 14px;
+    font-weight: 600;
+}
+
+.item.selected {
+    background: var(--bg-selected);
 }
 
 .item-label {
     display: flex;
     align-items: center;
-    gap: 12px;
-    z-index: 2;
+    gap: 8px;
 }
 
-.item.selected {
-    color: var(--text-main);
-    background: linear-gradient(90deg, rgba(255, 42, 42, 0.25) 0%, rgba(255, 42, 42, 0.05) 100%);
-    box-shadow: inset 3px 0 0 var(--primary-color);
-    transform: translateX(4px);
-}
-
-.item.selected .item-label {
-    font-weight: 700;
-    text-shadow: 0 0 8px rgba(255,255,255,0.4);
-}
-
-/* Right Side Value (Toggle / Slider / Text) */
-.item-right {
-    display: flex;
-    align-items: center;
-    gap: 12px;
-    z-index: 2;
+.item-label i {
+    display: none; /* Hide icons in items for clean ARYA look */
 }
 
 /* Toggle Switch */
 .toggle {
-    width: 40px;
-    height: 20px;
-    background: rgba(255,255,255,0.1);
+    width: 32px;
+    height: 18px;
+    background: #2a2a2a;
     border-radius: 20px;
     position: relative;
-    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-    border: 1px solid rgba(255,255,255,0.05);
+    transition: background 0.2s ease;
 }
 
 .toggle-knob {
@@ -215,18 +144,15 @@ body {
     height: 14px;
     background: #fff;
     border-radius: 50%;
-    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-    box-shadow: 0 2px 5px rgba(0,0,0,0.3);
+    transition: left 0.2s ease;
 }
 
 .item.active-toggle .toggle {
-    background: var(--primary-color);
-    border-color: var(--primary-color);
-    box-shadow: 0 0 10px var(--primary-glow);
+    background: #ffffff;
 }
 .item.active-toggle .toggle-knob {
-    left: 22px;
-    box-shadow: 0 0 8px #fff;
+    left: 16px;
+    background: #000; /* Contrast against white background */
 }
 
 /* Slider */
@@ -234,36 +160,68 @@ body {
     display: flex;
     align-items: center;
     gap: 12px;
+    width: 120px;
 }
 
 .slider-bar {
-    width: 90px;
-    height: 6px;
-    background: rgba(255,255,255,0.1);
-    border-radius: 3px;
+    flex: 1;
+    height: 3px;
+    background: #333;
     position: relative;
-    overflow: hidden;
 }
 
 .slider-fill {
     height: 100%;
-    background: linear-gradient(90deg, #aa0000 0%, var(--primary-color) 100%);
-    border-radius: 3px;
-    width: 50%; 
-    transition: width 0.1s linear;
+    background: #fff;
+    width: 50%;
+    position: relative;
+}
+
+.slider-fill::after {
+    content: '';
+    position: absolute;
+    right: -5px;
+    top: -3.5px;
+    width: 10px;
+    height: 10px;
+    background: #fff;
+    border-radius: 50%;
 }
 
 .slider-value {
-    font-size: 13px;
-    font-weight: 700;
-    color: var(--primary-color);
-    min-width: 30px;
-    text-align: right;
-    text-shadow: 0 0 5px var(--primary-glow);
+    display: none; /* Display value inside the label instead like ARYA */
 }
 
-.item.selected .slider-bar {
-    background: rgba(255,255,255,0.2);
+/* Separator / Submenu Arrow */
+.item-arrow {
+    color: var(--text-main);
+    font-size: 12px;
+    font-weight: 900;
+}
+
+.separator-item {
+    justify-content: center;
+    color: var(--text-main);
+    font-size: 12px;
+    font-weight: 700;
+    padding: 10px 16px;
+    opacity: 0.9;
+}
+
+.separator-text {
+    position: relative;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 100%;
+}
+
+.separator-text::before, .separator-text::after {
+    content: '';
+    flex: 1;
+    height: 1px;
+    background: #333;
+    margin: 0 10px;
 }
 
 /* Footer */
@@ -271,42 +229,25 @@ body {
     display: flex;
     justify-content: space-between;
     align-items: center;
-    padding: 14px 24px;
-    background: rgba(5, 5, 5, 0.8);
-    border-top: 1px solid var(--border-color);
-    font-size: 13px;
-    font-weight: 600;
+    padding: 12px 16px;
+    background: #050505;
+    border-bottom-left-radius: var(--border-radius);
+    border-bottom-right-radius: var(--border-radius);
 }
 
 .footer-text {
     color: var(--text-main);
-    display: flex;
-    align-items: center;
-    gap: 8px;
-}
-.footer-sub {
-    background: var(--primary-color);
-    color: #fff;
-    font-size: 10px;
-    padding: 2px 6px;
-    border-radius: 4px;
-    text-transform: uppercase;
-    font-weight: 800;
-    letter-spacing: 1px;
-    box-shadow: 0 0 8px var(--primary-glow);
+    font-size: 13px;
+    font-weight: 700;
 }
 
 .footer-page {
-    color: var(--text-muted);
-    background: rgba(255,255,255,0.1);
-    padding: 4px 10px;
-    border-radius: 20px;
-    font-size: 12px;
+    color: var(--text-main);
+    font-size: 13px;
+    font-weight: 700;
 }
 
-/* ---------------------------------
-   NOTIFICATIONS (TOASTS)
---------------------------------- */
+/* TOASTS */
 .toast-container {
     position: absolute;
     top: 5vh;
@@ -315,42 +256,26 @@ body {
     flex-direction: column;
     gap: 12px;
     z-index: 9999;
-    pointer-events: none;
 }
 
 .toast {
-    background: rgba(15, 15, 18, 0.85);
-    backdrop-filter: blur(10px);
-    border-left: 4px solid var(--primary-color);
+    background: #111;
+    border: 1px solid #333;
     border-radius: 6px;
-    padding: 16px 20px;
+    padding: 14px 18px;
     color: #fff;
-    font-size: 14px;
-    font-weight: 500;
-    box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+    font-size: 13px;
+    font-weight: 600;
     display: flex;
     align-items: center;
-    gap: 12px;
-    min-width: 250px;
-    
+    gap: 10px;
     transform: translateX(120%);
     opacity: 0;
     animation: slideInToast 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;
 }
 
-.toast.hiding {
-    animation: slideOutToast 0.4s ease forwards;
-}
-
-.toast-icon {
-    font-size: 18px;
-    color: var(--primary-color);
-    filter: drop-shadow(0 0 5px var(--primary-glow));
-}
-
-.toast-message {
-    flex: 1;
-}
+.toast.hiding { animation: slideOutToast 0.4s ease forwards; }
+.toast-icon { display: none; }
 
 @keyframes slideInToast {
     from { transform: translateX(120%); opacity: 0; }
@@ -360,4 +285,78 @@ body {
 @keyframes slideOutToast {
     from { transform: translateX(0); opacity: 1; }
     to { transform: translateX(120%); opacity: 0; }
+}
+
+/* KEYBIND OVERLAY */
+.keybind-overlay {
+    position: absolute;
+    top: 0; left: 0; width: 100vw; height: 100vh;
+    background: rgba(0,0,0,0.5);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 10000;
+}
+
+.keybind-box {
+    background: #000;
+    border: 1px solid #222;
+    border-radius: 8px;
+    width: 320px;
+    padding: 20px;
+    color: #fff;
+    box-shadow: 0 10px 40px rgba(0,0,0,0.8);
+}
+
+.keybind-header {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-bottom: 20px;
+}
+
+.keybind-avatar {
+    width: 32px;
+    height: 32px;
+    background: url('banner.jpg') center/cover;
+    border-radius: 4px;
+}
+
+.keybind-title {
+    font-size: 16px;
+    font-weight: 700;
+}
+
+.keybind-content {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.keybind-label {
+    font-size: 12px;
+    color: #666;
+    font-weight: 600;
+}
+
+.keybind-prompt {
+    font-size: 14px;
+    font-weight: 600;
+    margin-bottom: 12px;
+}
+
+.keybind-btn {
+    background: #111;
+    border: 1px solid #333;
+    border-radius: 4px;
+    padding: 12px;
+    text-align: center;
+    font-size: 14px;
+    font-weight: 700;
+    animation: blink 1s infinite alternate;
+}
+
+@keyframes blink {
+    from { opacity: 0.5; }
+    to { opacity: 1; }
 }

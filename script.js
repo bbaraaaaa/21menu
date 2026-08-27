@@ -1,207 +1,176 @@
 const app = document.getElementById('app');
-const menuTitle = document.getElementById('menu-title');
 const tabsContainer = document.getElementById('tabs-container');
 const itemsList = document.getElementById('items-list');
 const footerPage = document.getElementById('footer-page');
 const toastContainer = document.getElementById('toast-container');
+const keybindOverlay = document.getElementById('keybind-overlay');
 
-let currentData = null;
+let audioCtx = null;
+let beepBuffer = null;
+let clickBuffer = null;
 
-const tabIcons = {
-    "Player": "fa-user",
-    "Movement": "fa-person-running",
-    "Vehicle": "fa-car",
-    "Weapons": "fa-gun",
-    "Visuals": "fa-eye",
-    "Teleport": "fa-map-location-dot",
-    "Animations": "fa-person-booth",
-    "Players": "fa-users",
-    "Settings": "fa-gear",
-    "Default": "fa-bars"
-};
-
-// --- AUDIO SYSTEM ---
-const AudioContext = window.AudioContext || window.webkitAudioContext;
-let audioCtx;
-
-function playSound(type) {
+// Initialize Web Audio API
+function initAudio() {
     if (!audioCtx) {
-        try { audioCtx = new AudioContext(); } catch(e) { return; }
-    }
-    if (audioCtx.state === 'suspended') audioCtx.resume();
-    
-    const osc = audioCtx.createOscillator();
-    const gainNode = audioCtx.createGain();
-    
-    osc.connect(gainNode);
-    gainNode.connect(audioCtx.destination);
-    
-    if (type === 'tick') {
-        osc.type = 'sine';
-        osc.frequency.setValueAtTime(600, audioCtx.currentTime);
-        osc.frequency.exponentialRampToValueAtTime(800, audioCtx.currentTime + 0.05);
-        gainNode.gain.setValueAtTime(0.1, audioCtx.currentTime);
-        gainNode.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 0.05);
-        osc.start();
-        osc.stop(audioCtx.currentTime + 0.05);
-    } else if (type === 'select') {
-        osc.type = 'triangle';
-        osc.frequency.setValueAtTime(400, audioCtx.currentTime);
-        osc.frequency.exponentialRampToValueAtTime(600, audioCtx.currentTime + 0.1);
-        gainNode.gain.setValueAtTime(0.15, audioCtx.currentTime);
-        gainNode.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 0.1);
-        osc.start();
-        osc.stop(audioCtx.currentTime + 0.1);
+        audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+        
+        // Generate a very short click sound (Navigation)
+        const clickDuration = 0.01;
+        clickBuffer = audioCtx.createBuffer(1, audioCtx.sampleRate * clickDuration, audioCtx.sampleRate);
+        const clickData = clickBuffer.getChannelData(0);
+        for (let i = 0; i < clickBuffer.length; i++) {
+            clickData[i] = (Math.random() * 2 - 1) * Math.exp(-i / (audioCtx.sampleRate * 0.005));
+        }
+
+        // Generate a slightly deeper beep sound (Select)
+        const beepDuration = 0.05;
+        beepBuffer = audioCtx.createBuffer(1, audioCtx.sampleRate * beepDuration, audioCtx.sampleRate);
+        const beepData = beepBuffer.getChannelData(0);
+        for (let i = 0; i < beepBuffer.length; i++) {
+            beepData[i] = Math.sin(i * 0.05) * Math.exp(-i / (audioCtx.sampleRate * 0.02));
+        }
     }
 }
-// --------------------
 
-window.addEventListener('message', (event) => {
-    const data = event.data;
-
-    // Remove the fivem string formatting like "~g~", "~r~"
-    const cleanString = (str) => {
-        if (!str) return "";
-        return str.replace(/~[a-zA-Z]~/g, '');
-    };
-
-    if (data.action === "update") {
-        if (data.show) {
-            app.classList.add('show');
-        } else {
-            app.classList.remove('show');
-            return;
-        }
-
-        // Check if index changed for sound
-        if (currentData) {
-            if (currentData.selectedIndex !== data.selectedIndex || currentData.activeTab !== data.activeTab) {
-                playSound('tick');
-            } else if (JSON.stringify(currentData.items) !== JSON.stringify(data.items)) {
-                // If items changed but index didn't (means a toggle/button was pressed)
-                playSound('select');
-            }
-        }
-
-        currentData = data;
-        renderMenu();
+function playSound(type) {
+    if (!audioCtx) initAudio();
+    if (!audioCtx || audioCtx.state === 'suspended') {
+        audioCtx.resume();
     }
     
-    if (data.action === "notify") {
-        showToast(cleanString(data.message));
-        playSound('select');
-    }
-});
+    const source = audioCtx.createBufferSource();
+    source.buffer = type === 'click' ? clickBuffer : beepBuffer;
+    
+    const gainNode = audioCtx.createGain();
+    gainNode.gain.value = 0.1; // Low volume
+    
+    source.connect(gainNode);
+    gainNode.connect(audioCtx.destination);
+    source.start();
+}
 
 function showToast(message) {
     const toast = document.createElement('div');
     toast.className = 'toast';
-    toast.innerHTML = `
-        <i class="fa-solid fa-bell toast-icon"></i>
-        <div class="toast-message">${message}</div>
-    `;
+    toast.innerHTML = `<span class="toast-message">${message}</span>`;
     
     toastContainer.appendChild(toast);
     
     setTimeout(() => {
         toast.classList.add('hiding');
         setTimeout(() => {
-            if(toastContainer.contains(toast)) {
-                toastContainer.removeChild(toast);
-            }
-        }, 400); // Wait for slide out animation
-    }, 3000); // Show for 3 seconds
+            if (toast.parentElement) toast.remove();
+        }, 400);
+    }, 3000);
 }
 
-function renderMenu() {
-    if (!currentData) return;
-
-    // Render Tabs
-    tabsContainer.innerHTML = '';
-    if (currentData.tabs && currentData.tabs.length > 0) {
-        currentData.tabs.forEach((tab, index) => {
-            const tabEl = document.createElement('div');
-            tabEl.className = 'tab';
-            if (index === currentData.activeTab) {
-                tabEl.classList.add('active');
-            }
-            const iconClass = tabIcons[tab] || tabIcons["Default"];
-            tabEl.innerHTML = `<i class="fa-solid ${iconClass}"></i><span>${tab}</span>`;
-            tabsContainer.appendChild(tabEl);
-        });
-    }
-
-    // Pagination Logic
-    const maxItems = currentData.maxItemsPerPage || 10;
-    const totalItems = currentData.items.length;
-    let startIdx = 0;
-    let endIdx = totalItems;
+// Receive messages from Lua
+window.addEventListener('message', function(event) {
+    const data = event.data;
     
-    if (totalItems > maxItems) {
-        startIdx = Math.max(0, currentData.selectedIndex - maxItems + 1);
-        endIdx = startIdx + maxItems;
-        if (endIdx > totalItems) {
-            endIdx = totalItems;
-            startIdx = endIdx - maxItems;
+    if (data.action === 'notify') {
+        showToast(data.message);
+        return;
+    }
+    
+    if (data.action === 'showKeybind') {
+        if (data.show) {
+            keybindOverlay.style.display = 'flex';
+            document.querySelector('.keybind-btn').innerText = 'Waiting...';
+        } else {
+            keybindOverlay.style.display = 'none';
+        }
+        return;
+    }
+    
+    if (data.action === 'update') {
+        if (data.show) {
+            app.classList.add('show');
+            initAudio(); // Initialize audio context on first open
+        } else {
+            app.classList.remove('show');
+            return;
         }
         
-        if (currentData.selectedIndex < startIdx) {
-            startIdx = currentData.selectedIndex;
-            endIdx = startIdx + maxItems;
+        // Render Tabs
+        tabsContainer.innerHTML = '';
+        data.tabs.forEach((tabName, index) => {
+            const el = document.createElement('div');
+            el.className = 'tab';
+            if (index === data.activeTab) el.classList.add('active');
+            el.innerHTML = `<span>${tabName}</span>`;
+            tabsContainer.appendChild(el);
+        });
+        
+        // Render Items
+        itemsList.innerHTML = '';
+        
+        // Pagination logic
+        const maxItems = data.maxItemsPerPage || 10;
+        let startIndex = 0;
+        let endIndex = data.items.length - 1;
+        
+        if (data.items.length > maxItems) {
+            startIndex = Math.max(0, data.selectedIndex - Math.floor(maxItems / 2));
+            if (startIndex + maxItems > data.items.length) {
+                startIndex = data.items.length - maxItems;
+            }
+            endIndex = startIndex + maxItems - 1;
+        }
+        
+        // Render Footer Page
+        footerPage.innerText = `${data.selectedIndex + 1}/${data.items.length}`;
+        
+        let previousSelection = itemsList.querySelector('.selected');
+        
+        for (let i = startIndex; i <= endIndex; i++) {
+            const item = data.items[i];
+            const el = document.createElement('div');
+            el.className = 'item';
+            if (i === data.selectedIndex) {
+                el.classList.add('selected');
+                if (!previousSelection || previousSelection.dataset.index != i) {
+                    playSound('click'); // Play nav sound if selection changed
+                }
+            }
+            el.dataset.index = i;
+            
+            if (item.type === 'separator') {
+                el.className = 'item separator-item';
+                el.innerHTML = `<span class="separator-text">${item.label}</span>`;
+            } else {
+                let rightContent = '';
+                if (item.type === 'toggle') {
+                    if (item.state) el.classList.add('active-toggle');
+                    rightContent = `
+                        <div class="toggle">
+                            <div class="toggle-knob"></div>
+                        </div>
+                    `;
+                } else if (item.type === 'slider') {
+                    const percent = (item.value / item.max) * 100;
+                    rightContent = `
+                        <div class="slider-container">
+                            <div class="slider-bar">
+                                <div class="slider-fill" style="width: ${percent}%;"></div>
+                            </div>
+                        </div>
+                    `;
+                    // Overwrite label to include value
+                    item.label = `${item.label}: ${item.value}`;
+                } else {
+                    rightContent = `<i class="fa-solid fa-chevron-right item-arrow"></i>`;
+                }
+                
+                el.innerHTML = `
+                    <div class="item-label">
+                        <span>${item.label}</span>
+                    </div>
+                    ${rightContent}
+                `;
+            }
+            
+            itemsList.appendChild(el);
         }
     }
-
-    // Render Items
-    itemsList.innerHTML = '';
-    for (let i = startIdx; i < endIdx; i++) {
-        const item = currentData.items[i];
-        if (!item) continue;
-
-        const itemEl = document.createElement('div');
-        itemEl.className = 'item';
-        if (i === currentData.selectedIndex) {
-            itemEl.classList.add('selected');
-        }
-
-        const labelEl = document.createElement('div');
-        labelEl.className = 'item-label';
-        
-        let itemIcon = 'fa-circle';
-        if (item.type === 'toggle') itemIcon = 'fa-power-off';
-        else if (item.type === 'slider') itemIcon = 'fa-sliders';
-        else if (item.type === 'button') itemIcon = 'fa-hand-pointer';
-        
-        labelEl.innerHTML = `<i class="fa-solid ${itemIcon}" style="font-size: 10px; opacity: 0.5;"></i> ${item.label}`;
-        itemEl.appendChild(labelEl);
-
-        const rightEl = document.createElement('div');
-        rightEl.className = 'item-right';
-
-        if (item.type === 'toggle') {
-            if (item.state) itemEl.classList.add('active-toggle');
-            rightEl.innerHTML = `
-                <div class="toggle">
-                    <div class="toggle-knob"></div>
-                </div>
-            `;
-        } else if (item.type === 'slider') {
-            const fillPct = (item.value / item.max) * 100;
-            rightEl.innerHTML = `
-                <div class="slider-container">
-                    <div class="slider-bar"><div class="slider-fill" style="width: ${fillPct}%"></div></div>
-                    <div class="slider-value">${item.value}</div>
-                </div>
-            `;
-        } else if (item.type === 'sub') {
-            rightEl.innerHTML = `<i class="fa-solid fa-chevron-right item-arrow"></i>`;
-        } else if (item.value) {
-            rightEl.innerHTML = `<span style="color: var(--text-muted); font-size: 13px;">${item.value}</span>`;
-        }
-
-        itemEl.appendChild(rightEl);
-        itemsList.appendChild(itemEl);
-    }
-
-    // Footer Page
-    footerPage.innerText = `${currentData.selectedIndex + 1} / ${totalItems}`;
-}
+});
