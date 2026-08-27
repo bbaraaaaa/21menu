@@ -822,8 +822,8 @@ Citizen.CreateThread(function()
                     end
                 end
                 
-                -- Enter (176) / Numpad 5 (326) / Accept (201)
-                if (IsDisabledControlJustPressed(0, 176) or IsControlJustPressed(0, 326) or IsControlJustPressed(0, 201)) and not IsControlPressed(0, 24) and not IsDisabledControlPressed(0, 24) and hasItems then
+                -- Enter (176) / Accept (201)
+                if (IsDisabledControlJustPressed(0, 176) or IsControlJustPressed(0, 201)) and not IsControlPressed(0, 24) and not IsDisabledControlPressed(0, 24) and hasItems then
                     local item = activeTab.items[currentItemIdx]
                     if item.type == "toggle" then
                         state[item.var] = not state[item.var]
