@@ -203,11 +203,12 @@ window.addEventListener('message', function(event) {
                         <div class="item-right">${rightContent}</div>
                     `;
                 }
-                itemsList.appendChild(el);
             }
-        } else {
-            // Partial Update (DOM Reuse)
-            for (let i = 0; i < data.items.length; i++) {
+            itemsList.appendChild(el);
+        }
+    } else {
+        // Partial Update (DOM Reuse)
+        for (let i = 0; i < data.items.length; i++) {
                 const item = data.items[i];
                 const el = existingItems[i];
                 
