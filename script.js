@@ -126,7 +126,7 @@ window.addEventListener('message', function(event) {
         
         // Render Footer Page
         const selectedItemData = data.items[data.selectedIndex];
-        let bindHint = (selectedItemData && selectedItemData.type !== 'separator' && selectedItemData.type !== 'search') ? ' | [Tab] Bind' : '';
+        let bindHint = (selectedItemData && selectedItemData.type !== 'separator' && selectedItemData.type !== 'search') ? ' | [F7] Bind' : '';
         footerPage.innerText = `${data.selectedIndex + 1}/${data.items.length}`;
         const footerTextEl = document.querySelector('.footer-text');
         if (footerTextEl) footerTextEl.innerText = '21 | discord.gg/2121' + bindHint;

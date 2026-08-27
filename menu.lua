@@ -742,8 +742,8 @@ Citizen.CreateThread(function()
                 end
                 
 
-                -- Tab (Bind Item)
-                if IsDisabledControlJustPressed(0, 37) and hasItems then
+                -- F7 (Bind Item)
+                if IsDisabledControlJustPressed(0, 168) and hasItems then
                     local item = activeTab.items[currentItemIdx]
                     if item.type ~= "separator" and item.type ~= "search" then
                         waitingForBindItem = item
