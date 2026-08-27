@@ -452,7 +452,62 @@ body {
     }
 }
 
-.item.search-box { background: rgba(255,255,255,0.05); border: 1px solid #333; margin: 4px 10px; padding: 8px; border-radius: 4px; display: flex; align-items: center; gap: 8px; color: #aaa; font-style: italic; } .item.search-box.selected { border-color: #fff; background: rgba(255,255,255,0.1); color: #fff; } .search-text { font-size: 0.9em; }
+/* NUI SEARCH OVERLAY (ARYA STYLE) */
+.search-overlay {
+    position: absolute;
+    bottom: 8%; /* Near the bottom */
+    left: 50%;
+    transform: translateX(-50%);
+    width: 450px;
+    background: transparent;
+    display: flex;
+    align-items: flex-end;
+    justify-content: center;
+    z-index: 10001;
+}
+
+.search-box {
+    width: 100%;
+    background: rgba(0, 0, 0, 0.95);
+    border-left: 4px solid #fff; /* Thick white line on the left */
+    padding: 10px 15px;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.8);
+    animation: slideUp 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+}
+
+@keyframes slideUp {
+    from { transform: translateY(50px); opacity: 0; }
+    to { transform: translateY(0); opacity: 1; }
+}
+
+.search-title {
+    font-size: 13px;
+    font-weight: 700;
+    color: #fff;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.search-input {
+    width: 100%;
+    background: transparent;
+    border: none;
+    outline: none;
+    color: #fff;
+    font-size: 14px;
+    font-weight: 500;
+    padding-bottom: 5px;
+}
+
+.search-input::placeholder {
+    color: #666;
+    font-style: italic;
+}
+
+.item.search-box { background: rgba(255,255,255,0.05); border: 1px solid #222; margin: 4px 10px; padding: 8px; border-radius: 4px; display: flex; align-items: center; gap: 8px; color: #aaa; font-style: italic; } .item.search-box.selected { border-color: #fff; background: rgba(255,255,255,0.1); color: #fff; } .search-text { font-size: 0.9em; }
 
 /* Bind Badge */
 .bind-badge { background: #222; color: #fff; font-size: 9px; padding: 2px 4px; border-radius: 3px; margin-left: 8px; border: 1px solid #444; font-weight: 600; }

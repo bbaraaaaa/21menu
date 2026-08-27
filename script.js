@@ -83,6 +83,15 @@ window.addEventListener('message', function(event) {
         return;
     }
     
+    if (data.action === 'openSearch') {
+        const searchOverlay = document.getElementById('search-overlay');
+        const searchInput = document.getElementById('search-input');
+        searchOverlay.style.display = 'flex';
+        searchInput.value = '';
+        setTimeout(() => { searchInput.focus(); }, 100);
+        return;
+    }
+    
     if (data.action === 'update') {
         if (data.menuAlign === 'Left') {
             app.style.left = '1.5vw';
@@ -270,3 +279,29 @@ window.addEventListener('message', function(event) {
         }
     }
 });
+
+// NUI Search Input Listener
+const searchInput = document.getElementById('search-input');
+const searchOverlay = document.getElementById('search-overlay');
+
+if (searchInput) {
+    searchInput.addEventListener('keydown', function(e) {
+        if (e.key === 'Enter') {
+            const query = searchInput.value;
+            searchOverlay.style.display = 'none';
+            // Send to Lua
+            fetch(`https://${window.GetParentResourceName ? GetParentResourceName() : '21menu'}/closeSearch`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ query: query })
+            }).catch(() => {});
+        } else if (e.key === 'Escape') {
+            searchOverlay.style.display = 'none';
+            fetch(`https://${window.GetParentResourceName ? GetParentResourceName() : '21menu'}/closeSearch`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ query: null })
+            }).catch(() => {});
+        }
+    });
+}
