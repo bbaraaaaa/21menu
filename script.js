@@ -97,7 +97,15 @@ window.addEventListener('message', function(event) {
             app.classList.remove('show');
             return;
         }
-        
+        // Render Category Header
+        const categoryHeader = document.getElementById('category-header');
+        if (categoryHeader && data.categoryName) {
+            // Capitalize first letter
+            let catName = data.categoryName.charAt(0).toUpperCase() + data.categoryName.slice(1);
+            if (catName === 'Main menu') catName = 'Self'; // Arya defaults Main to Self
+            categoryHeader.innerText = catName;
+        }
+
         // Render Tabs
         tabsContainer.innerHTML = '';
         data.tabs.forEach((tabName, index) => {
@@ -213,6 +221,7 @@ window.addEventListener('message', function(event) {
                     el.classList.remove('selected');
                 }
                 
+/* Update ARYA toggles and sliders in DOM diffing */
                 if (item.type === 'toggle') {
                     if (item.state) el.classList.add('active-toggle');
                     else el.classList.remove('active-toggle');
@@ -221,7 +230,7 @@ window.addEventListener('message', function(event) {
                     const fill = el.querySelector('.slider-fill');
                     if (fill) fill.style.width = percent + '%';
                     const text = el.querySelector('.item-text');
-                    if (text) text.innerText = `${item.label}: ${item.value}`;
+                    if (text) text.innerText = `${item.label}`;
                 } else if (item.type === 'list') {
                     const listVal = el.querySelector('.list-value');
                     if (listVal) listVal.innerText = `< ${item.listName} >`;
