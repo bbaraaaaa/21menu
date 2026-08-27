@@ -584,8 +584,8 @@ Citizen.CreateThread(function()
             else
                 -- Check for any key press to set temp key
                 for i=0, 359 do
-                    -- Ignore typical Enter control mappings so they don't overwrite selection
-                    if i ~= 176 and i ~= 191 and i ~= 18 and i ~= 201 and i ~= 12 then
+                    -- Ignore typical Enter control mappings and Mouse controls (1, 2, 24, 25) so they don't overwrite selection
+                    if i ~= 176 and i ~= 191 and i ~= 18 and i ~= 201 and i ~= 12 and i ~= 1 and i ~= 2 and i ~= 24 and i ~= 25 then
                         if IsControlJustPressed(0, i) then
                             tempMenuOpenKey = i
                             local keyName = GetKeyName(i)
@@ -604,15 +604,11 @@ Citizen.CreateThread(function()
                 end
             end
         else
-            -- Open Menu
-            if menuOpenKey and (IsDisabledControlJustPressed(0, menuOpenKey) or IsControlJustPressed(0, menuOpenKey)) then
-                menuOpen = not menuOpen
-                if menuOpen then
-                    initDui()
-                    updateUI()
-                else
-                    updateUI() -- Send hide message
-                end
+            -- Open Menu Only
+            if not menuOpen and menuOpenKey and (IsDisabledControlJustPressed(0, menuOpenKey) or IsControlJustPressed(0, menuOpenKey)) then
+                menuOpen = true
+                initDui()
+                updateUI()
             end
         end
         
