@@ -102,7 +102,6 @@ window.addEventListener('message', function(event) {
         if (categoryHeader && data.categoryName) {
             // Capitalize first letter
             let catName = data.categoryName.charAt(0).toUpperCase() + data.categoryName.slice(1);
-            if (catName === 'Main menu') catName = 'Self'; // Arya defaults Main to Self
             categoryHeader.innerText = catName;
         }
 
@@ -195,8 +194,25 @@ window.addEventListener('message', function(event) {
                 
                 if (item.type !== 'search') {
                     let bindHTML = item.bindKey ? `<span class="bind-badge">[${item.bindKey}]</span>` : '';
+                    let iconHTML = '';
+                    // Map common ARYA icons
+                    const iconMap = {
+                        "Self": "fa-solid fa-user",
+                        "Server": "fa-solid fa-globe",
+                        "Combat": "fa-solid fa-crosshairs",
+                        "Weapon": "fa-solid fa-gun",
+                        "Vehicle": "fa-solid fa-car",
+                        "Destroyer": "fa-solid fa-skull",
+                        "Misc": "fa-solid fa-list-ul",
+                        "Settings": "fa-solid fa-gear"
+                    };
+                    if (iconMap[item.label]) {
+                        iconHTML = `<i class="${iconMap[item.label]} item-icon"></i>`;
+                    }
+                    
                     el.innerHTML = `
                         <div class="item-label">
+                            ${iconHTML}
                             <span class="item-text">${item.label}</span>
                             ${bindHTML}
                         </div>
