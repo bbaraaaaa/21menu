@@ -46,7 +46,7 @@ local state = {
     antiteleport = false,
     antiattach = false,
     antifreeze = false,
-    menuAlign = "Right"
+    menuAlign = "Left"
 }
 
 local animations = {
@@ -358,7 +358,7 @@ local categories = {
             }
         }
     }
-}}
+}
 
 function ShowNotification(text)
     if duiObj then
@@ -629,14 +629,17 @@ Citizen.CreateThread(function()
                 DisableControlAction(0, 177, true) -- Backspace
                 
                 local changed = false
+                local activeCategory = categories[currentCategory]
+                local tabs = activeCategory.tabs
                 local activeTab = tabs[currentTabIdx]
+                local hasItems = #activeTab.items > 0
                 
                 -- Up
-                if IsDisabledControlJustPressed(0, 172) then
+                if IsDisabledControlJustPressed(0, 172) and hasItems then
                     currentItemIdx = currentItemIdx - 1
                     if currentItemIdx < 1 then currentItemIdx = #activeTab.items end
                     -- Skip separators
-                    while activeTab.items[currentItemIdx].type == "separator" do
+                    while activeTab.items[currentItemIdx] and activeTab.items[currentItemIdx].type == "separator" do
                         currentItemIdx = currentItemIdx - 1
                         if currentItemIdx < 1 then currentItemIdx = #activeTab.items end
                     end
@@ -644,11 +647,11 @@ Citizen.CreateThread(function()
                 end
                 
                 -- Down
-                if IsDisabledControlJustPressed(0, 173) then
+                if IsDisabledControlJustPressed(0, 173) and hasItems then
                     currentItemIdx = currentItemIdx + 1
                     if currentItemIdx > #activeTab.items then currentItemIdx = 1 end
                     -- Skip separators
-                    while activeTab.items[currentItemIdx].type == "separator" do
+                    while activeTab.items[currentItemIdx] and activeTab.items[currentItemIdx].type == "separator" do
                         currentItemIdx = currentItemIdx + 1
                         if currentItemIdx > #activeTab.items then currentItemIdx = 1 end
                     end
@@ -684,7 +687,7 @@ Citizen.CreateThread(function()
                 end
                 
                 -- Item Value Left (Arrow Left is 174)
-                if IsDisabledControlJustPressed(0, 174) then
+                if IsDisabledControlJustPressed(0, 174) and hasItems then
                     local item = activeTab.items[currentItemIdx]
                     if item.type == "slider" then
                         state[item.var] = math.max(item.min, state[item.var] - item.step)
@@ -697,7 +700,7 @@ Citizen.CreateThread(function()
                 end
                 
                 -- Item Value Right (Arrow Right is 175)
-                if IsDisabledControlJustPressed(0, 175) then
+                if IsDisabledControlJustPressed(0, 175) and hasItems then
                     local item = activeTab.items[currentItemIdx]
                     if item.type == "slider" then
                         state[item.var] = math.min(item.max, state[item.var] + item.step)
@@ -710,7 +713,7 @@ Citizen.CreateThread(function()
                 end
                 
                 -- Enter (176) / Numpad 5 (326)
-                if IsDisabledControlJustPressed(0, 176) or IsControlJustPressed(0, 326) then
+                if (IsDisabledControlJustPressed(0, 176) or IsControlJustPressed(0, 326)) and hasItems then
                     local item = activeTab.items[currentItemIdx]
                     if item.type == "toggle" then
                         state[item.var] = not state[item.var]
