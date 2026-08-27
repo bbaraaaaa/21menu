@@ -432,13 +432,13 @@ function updateUI()
                 if isSearching then return end
                 isSearching = true
                 Citizen.CreateThread(function()
-                    AddTextEntry('SEARCH_PLAYERS', "Search Players")
-                    DisplayOnscreenKeyboard(1, "SEARCH_PLAYERS", "", playerSearchQuery, "", "", "", 30)
+                    DisplayOnscreenKeyboard(1, "FMMC_KEY_TIP1", "", playerSearchQuery, "", "", "", 30)
                     while UpdateOnscreenKeyboard() == 0 do
                         Citizen.Wait(0)
                     end
-                    if GetOnscreenKeyboardResult() then
-                        playerSearchQuery = GetOnscreenKeyboardResult()
+                    if UpdateOnscreenKeyboard() == 1 then
+                        local res = GetOnscreenKeyboardResult()
+                        if res then playerSearchQuery = res end
                     end
                     isSearching = false
                     updateUI()
@@ -519,7 +519,7 @@ function updateUI()
         activeTab = 0,
         items = itemsForJS,
         selectedIndex = currentItemIdx - 1,
-        maxItemsPerPage = 13
+        maxItemsPerPage = 8
     }
     
     local tabIdxMap = {}

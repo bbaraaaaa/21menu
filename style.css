@@ -91,7 +91,7 @@ body {
 
 /* Content List */
 .content-container {
-    max-height: 60vh;
+    height: 350px;
     overflow: hidden;
     display: flex;
     background: #000000;
