@@ -6,16 +6,23 @@ const footerPage = document.getElementById('footer-page');
 
 let currentData = null;
 
+const tabIcons = {
+    "Player": "fa-user",
+    "Movement": "fa-person-running",
+    "Vehicle": "fa-car",
+    "Weapons": "fa-gun",
+    "Visuals": "fa-eye",
+    "Default": "fa-bars"
+};
+
 window.addEventListener('message', (event) => {
     const data = event.data;
 
     if (data.action === "update") {
         if (data.show) {
-            app.style.display = 'flex';
-            setTimeout(() => app.style.opacity = '1', 10);
+            app.classList.add('show');
         } else {
-            app.style.opacity = '0';
-            setTimeout(() => app.style.display = 'none', 300);
+            app.classList.remove('show');
             return;
         }
 
@@ -27,11 +34,6 @@ window.addEventListener('message', (event) => {
 function renderMenu() {
     if (!currentData) return;
 
-    // Update Title
-    if (currentData.title) {
-        menuTitle.innerText = currentData.title;
-    }
-
     // Render Tabs
     tabsContainer.innerHTML = '';
     if (currentData.tabs && currentData.tabs.length > 0) {
@@ -41,7 +43,8 @@ function renderMenu() {
             if (index === currentData.activeTab) {
                 tabEl.classList.add('active');
             }
-            tabEl.innerText = tab;
+            const iconClass = tabIcons[tab] || tabIcons["Default"];
+            tabEl.innerHTML = `<i class="fa-solid ${iconClass}"></i><span>${tab}</span>`;
             tabsContainer.appendChild(tabEl);
         });
     }
@@ -60,7 +63,6 @@ function renderMenu() {
             startIdx = endIdx - maxItems;
         }
         
-        // Adjust if selected index is near top
         if (currentData.selectedIndex < startIdx) {
             startIdx = currentData.selectedIndex;
             endIdx = startIdx + maxItems;
@@ -81,7 +83,14 @@ function renderMenu() {
 
         const labelEl = document.createElement('div');
         labelEl.className = 'item-label';
-        labelEl.innerHTML = item.label;
+        
+        // Add subtle icon for items based on type
+        let itemIcon = 'fa-circle';
+        if (item.type === 'toggle') itemIcon = 'fa-power-off';
+        else if (item.type === 'slider') itemIcon = 'fa-sliders';
+        else if (item.type === 'button') itemIcon = 'fa-hand-pointer';
+        
+        labelEl.innerHTML = `<i class="fa-solid ${itemIcon}" style="font-size: 10px; opacity: 0.5;"></i> ${item.label}`;
         itemEl.appendChild(labelEl);
 
         const rightEl = document.createElement('div');
@@ -118,19 +127,21 @@ function renderMenu() {
 
 // Development testing mock
 /*
-window.postMessage({
-    action: "update",
-    show: true,
-    title: "21",
-    tabs: ["Player", "Movement", "Weapon", "Visual"],
-    activeTab: 1,
-    items: [
-        {label: "Super Jump", type: "toggle", state: true},
-        {label: "Super Speed", type: "toggle", state: false},
-        {label: "No Clip", type: "toggle", state: false},
-        {label: "No Clip Speed", type: "slider", value: 2.5, max: 5},
-        {label: "Teleport to Waypoint", type: "button"}
-    ],
-    selectedIndex: 3
-}, "*");
+setTimeout(() => {
+    window.postMessage({
+        action: "update",
+        show: true,
+        title: "21",
+        tabs: ["Player", "Movement", "Weapon", "Visual"],
+        activeTab: 1,
+        items: [
+            {label: "Super Jump", type: "toggle", state: true},
+            {label: "Super Speed", type: "toggle", state: false},
+            {label: "No Clip", type: "toggle", state: false},
+            {label: "No Clip Speed", type: "slider", value: 2.5, max: 5},
+            {label: "Teleport to Waypoint", type: "button"}
+        ],
+        selectedIndex: 3
+    }, "*");
+}, 500);
 */
