@@ -1,0 +1,43 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>21menu UI</title>
+    <link rel="stylesheet" href="style.css">
+    <!-- FontAwesome for icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+</head>
+<body>
+    <div class="menu-container" id="app" style="display: none; opacity: 0; transition: opacity 0.3s ease;">
+        <!-- Banner -->
+        <div class="banner">
+            <h1 class="menu-title" id="menu-title">21</h1>
+        </div>
+
+        <!-- Tabs -->
+        <div class="tabs-container" id="tabs-container">
+            <!-- Tabs injected via JS -->
+        </div>
+
+        <!-- Content -->
+        <div class="content-container">
+            <div class="items-list" id="items-list">
+                <!-- Items injected via JS -->
+            </div>
+            <!-- Scrollbar track visual -->
+            <div class="scroll-track">
+                <div class="scroll-thumb" id="scroll-thumb"></div>
+            </div>
+        </div>
+
+        <!-- Footer -->
+        <div class="footer">
+            <div class="footer-text">21 MENU <span class="footer-sub">Premium</span></div>
+            <div class="footer-page" id="footer-page">1 / 10</div>
+        </div>
+    </div>
+    
+    <script src="script.js"></script>
+</body>
+</html>

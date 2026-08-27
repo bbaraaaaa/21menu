@@ -1,0 +1,223 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
+
+:root {
+    --bg-color: rgba(15, 15, 15, 0.95);
+    --bg-hover: rgba(30, 30, 30, 0.95);
+    --primary-color: #ff2a2a;
+    --primary-glow: rgba(255, 42, 42, 0.3);
+    --text-main: #ffffff;
+    --text-muted: #888888;
+    --border-color: rgba(255, 255, 255, 0.1);
+    
+    --menu-width: 22vw;
+    --menu-x: 75vw;
+    --menu-y: 10vh;
+}
+
+* {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+    font-family: 'Inter', sans-serif;
+    user-select: none;
+}
+
+body {
+    background-color: transparent; /* For FiveM DUI */
+    overflow: hidden;
+}
+
+.menu-container {
+    position: absolute;
+    top: var(--menu-y);
+    left: var(--menu-x);
+    width: var(--menu-width);
+    display: flex;
+    flex-direction: column;
+    border-radius: 8px;
+    box-shadow: 0 10px 30px rgba(0,0,0,0.8);
+    background: var(--bg-color);
+    overflow: hidden;
+    border: 1px solid var(--border-color);
+}
+
+/* Banner */
+.banner {
+    position: relative;
+    height: 80px;
+    background: linear-gradient(135deg, #111 0%, #000 100%);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-bottom: 2px solid var(--primary-color);
+}
+
+.banner::before {
+    content: '';
+    position: absolute;
+    top: 0; left: 0; right: 0; bottom: 0;
+    background: radial-gradient(circle at center, var(--primary-glow) 0%, transparent 70%);
+    opacity: 0.5;
+}
+
+.menu-title {
+    color: var(--text-main);
+    font-size: 32px;
+    font-weight: 800;
+    letter-spacing: 2px;
+    text-shadow: 0 0 15px var(--primary-color);
+    z-index: 1;
+}
+
+/* Tabs */
+.tabs-container {
+    display: flex;
+    background: rgba(0, 0, 0, 0.6);
+    overflow: hidden;
+    border-bottom: 1px solid var(--border-color);
+}
+
+.tab {
+    flex: 1;
+    text-align: center;
+    padding: 12px 0;
+    color: var(--text-muted);
+    font-size: 14px;
+    font-weight: 600;
+    transition: all 0.2s ease;
+    border-bottom: 2px solid transparent;
+}
+
+.tab.active {
+    color: var(--text-main);
+    border-bottom: 2px solid var(--primary-color);
+    background: linear-gradient(to top, rgba(255, 42, 42, 0.1) 0%, transparent 100%);
+}
+
+/* Content List */
+.content-container {
+    position: relative;
+    max-height: 45vh; /* About 10 items */
+    overflow: hidden;
+    display: flex;
+}
+
+.items-list {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+}
+
+.item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 14px 20px;
+    color: var(--text-main);
+    font-size: 15px;
+    font-weight: 500;
+    transition: all 0.15s ease;
+    border-bottom: 1px solid rgba(255,255,255,0.02);
+}
+
+.item.selected {
+    background: linear-gradient(90deg, rgba(255, 42, 42, 0.2) 0%, rgba(255, 42, 42, 0) 100%);
+    border-left: 4px solid var(--primary-color);
+    padding-left: 16px;
+}
+
+/* Right Side Value (Toggle / Slider / Text) */
+.item-right {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+/* Toggle Switch */
+.toggle {
+    width: 36px;
+    height: 18px;
+    background: #333;
+    border-radius: 20px;
+    position: relative;
+    transition: background 0.2s ease;
+}
+
+.toggle-knob {
+    position: absolute;
+    top: 2px;
+    left: 2px;
+    width: 14px;
+    height: 14px;
+    background: #fff;
+    border-radius: 50%;
+    transition: left 0.2s ease, box-shadow 0.2s ease;
+}
+
+.item.active-toggle .toggle {
+    background: var(--primary-color);
+}
+.item.active-toggle .toggle-knob {
+    left: 20px;
+    box-shadow: 0 0 8px var(--primary-color);
+}
+
+/* Slider */
+.slider-container {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.slider-bar {
+    width: 80px;
+    height: 4px;
+    background: #333;
+    border-radius: 2px;
+    position: relative;
+}
+
+.slider-fill {
+    height: 100%;
+    background: var(--primary-color);
+    border-radius: 2px;
+    width: 50%; /* Set via JS */
+}
+
+.slider-value {
+    font-size: 12px;
+    color: var(--text-muted);
+    min-width: 25px;
+    text-align: right;
+}
+
+/* Arrow indicator for submenus */
+.item-arrow {
+    color: var(--text-muted);
+    font-size: 12px;
+}
+
+/* Footer */
+.footer {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 12px 20px;
+    background: #000;
+    border-top: 1px solid var(--primary-color);
+    font-size: 13px;
+    font-weight: 600;
+}
+
+.footer-text {
+    color: var(--text-main);
+}
+.footer-sub {
+    color: var(--primary-color);
+    font-size: 11px;
+    text-transform: uppercase;
+}
+
+.footer-page {
+    color: var(--text-muted);
+}
