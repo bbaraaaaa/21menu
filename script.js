@@ -170,38 +170,34 @@ window.addEventListener('message', function(event) {
                     el.className = 'item separator-item';
                     el.innerHTML = `<span class="separator-text">${item.label}</span>`;
                 } else {
-                let rightContent = '';
-                if (item.type === 'search') {
-                el.classList.add('search-box');
-                el.innerHTML = `
-                    <i class="fa-solid fa-magnifying-glass"></i>
-                    <span class="search-text">${item.label ? item.label : 'Search...'}</span>
-                `;
-            } else if (item.type === 'toggle') {
-                    if (item.state) el.classList.add('active-toggle');
-                    rightContent = `
-                        <div class="toggle">
-                            <div class="toggle-knob"></div>
-                        </div>
-                    `;
-                } else if (item.type === 'slider') {
-                    const percent = (item.value / item.max) * 100;
-                    rightContent = `
-                        <div class="slider-container">
-                            <div class="slider-bar">
-                                <div class="slider-fill" style="width: ${percent}%;"></div>
+                    let rightContent = '';
+                    if (item.type === 'search') {
+                        rightContent = `<span class="list-value" style="color: #bbb; font-size: 0.9em; letter-spacing: 0.5px;">&lt; Search &gt;</span>`;
+                        if (!item.label) item.label = 'Search';
+                    } else if (item.type === 'toggle') {
+                        if (item.state) el.classList.add('active-toggle');
+                        rightContent = `
+                            <div class="toggle">
+                                <div class="toggle-knob"></div>
                             </div>
-                        </div>
-                    `;
-                    // Overwrite label to include value
-                    item.label = `${item.label}: ${item.value}`;
-                } else if (item.type === 'list') {
-                    rightContent = `<span class="list-value" style="color: #bbb; font-size: 0.9em; letter-spacing: 0.5px;">&lt; ${item.listName} &gt;</span>`;
-                } else {
-                    rightContent = `<i class="fa-solid fa-chevron-right item-arrow"></i>`;
-                }
-                
-                if (item.type !== 'search') {
+                        `;
+                    } else if (item.type === 'slider') {
+                        const percent = (item.value / item.max) * 100;
+                        rightContent = `
+                            <div class="slider-container">
+                                <div class="slider-bar">
+                                    <div class="slider-fill" style="width: ${percent}%;"></div>
+                                </div>
+                            </div>
+                        `;
+                        // Overwrite label to include value
+                        item.label = `${item.label}: ${item.value}`;
+                    } else if (item.type === 'list') {
+                        rightContent = `<span class="list-value" style="color: #bbb; font-size: 0.9em; letter-spacing: 0.5px;">&lt; ${item.listName} &gt;</span>`;
+                    } else {
+                        rightContent = `<i class="fa-solid fa-chevron-right item-arrow"></i>`;
+                    }
+                    
                     let bindHTML = item.bindKey ? `<span class="bind-badge">[${item.bindKey}]</span>` : '';
                     let iconHTML = '';
                     // Map common ARYA icons
