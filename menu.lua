@@ -11,9 +11,13 @@ local currentItemIdx = 1
 local menuOpenKey = nil
 local waitingForKey = true
 local isFirstLaunch = true
+local wasNoclip = false
 
 local SpectateActive = false
 local SpectateTarget = nil
+
+local selectedPlayerId = -1
+local selectedPlayerName = ""
 
 local state = {
     god = false,
@@ -36,7 +40,13 @@ local state = {
     thermalvision = false,
     noclipSpeed = 45.0,
     timecontrol = false,
-    time = 12.0
+        time = 12.0,
+    blocker = false,
+    antiaim = false,
+    antiteleport = false,
+    antiattach = false,
+    antifreeze = false,
+    menuAlign = "Right"
 }
 
 local animations = {
@@ -45,19 +55,18 @@ local animations = {
 }
 local selectedAnimation = 1
 local isAnimPlaying = false
+local isSearching = false
 
-function GetNearbyPlayers()
+local playerSearchQuery = ""
+
+function GetAllPlayers()
     local players = {}
-    local ped = PlayerPedId()
-    local coords = GetEntityCoords(ped)
     for _, player in ipairs(GetActivePlayers()) do
-        local targetPed = GetPlayerPed(player)
-        if targetPed ~= ped then
-            local dist = #(coords - GetEntityCoords(targetPed))
-            table.insert(players, { id = player, name = GetPlayerName(player), dist = math.floor(dist) })
-        end
+        local serverId = GetPlayerServerId(player)
+        local name = GetPlayerName(player)
+        table.insert(players, { id = player, serverId = serverId, name = tostring(serverId) .. " - " .. name })
     end
-    table.sort(players, function(a,b) return a.dist < b.dist end)
+    table.sort(players, function(a,b) return a.serverId < b.serverId end)
     return players
 end
 
@@ -73,138 +82,283 @@ function GetKeyName(val)
     return keyNames[val] or ("Key ID: " .. val)
 end
 
-local tabs = {
-        items = {
-            {label = "Heal", type = "button", action = function() SetEntityHealth(PlayerPedId(), 200) ShowNotification("Healed!") end},
-            {label = "Armor", type = "button", action = function() AddArmourToPed(PlayerPedId(), 100) ShowNotification("Max Armor Given!") end},
-            {label = "Suicide", type = "button", action = function() SetEntityHealth(PlayerPedId(), 0) ShowNotification("Wasted!") end},
-            {label = "Protection", type = "separator"},
-            {label = "Godmode", type = "toggle", var = "god"},
-            {label = "Invisible", type = "toggle", var = "invis"},
-            {label = "Super Jump", type = "toggle", var = "superjump"},
-            {label = "Clear Wanted", type = "button", action = function() ClearPlayerWantedLevel(PlayerId()) ShowNotification("Wanted Cleared!") end},
-            {label = "Never Wanted", type = "toggle", var = "neverwanted"}
+local currentCategory = "main"
+
+function OpenCategory(cat)
+    currentCategory = cat
+    currentTabIdx = 1
+    currentItemIdx = 1
+end
+
+local categories = {
+    main = {
+        title = "Main menu",
+        tabs = {
+            {
+                name = "Main menu",
+                items = {
+                    {label = "Self", type = "button", action = function() OpenCategory("self") end},
+                    {label = "Server", type = "button", action = function() OpenCategory("server") end},
+                    {label = "Combat", type = "button", action = function() OpenCategory("combat") end},
+                    {label = "Weapon", type = "button", action = function() OpenCategory("weapon") end},
+                    {label = "Vehicle", type = "button", action = function() OpenCategory("vehicle") end},
+                    {label = "Destroyer", type = "button", action = function() OpenCategory("destroyer") end},
+                    {label = "Misc", type = "button", action = function() OpenCategory("misc") end},
+                    {label = "Settings", type = "button", action = function() OpenCategory("settings") end}
+                }
+            }
         }
     },
-    {
-        name = "Movement",
-        items = {
-            {label = "Fast Run", type = "toggle", var = "fastrun"},
-            {label = "Noclip Settings", type = "separator"},
-            {label = "Noclip", type = "toggle", var = "noclip"},
-            {label = "Noclip Speed", type = "slider", var = "noclipSpeed", min = 5.0, max = 200.0, step = 5.0}
+    self = {
+        title = "Self",
+        tabs = {
+            {
+                name = "Player",
+                items = {
+                    {label = "Revive", type = "button", action = function() SetEntityHealth(PlayerPedId(), 200) ShowNotification("Revived!") end},
+                    {label = "Health: 10", type = "button", action = function() SetEntityHealth(PlayerPedId(), 200) ShowNotification("Healed!") end},
+                    {label = "Armor: 10", type = "button", action = function() AddArmourToPed(PlayerPedId(), 100) ShowNotification("Armor Given!") end},
+                    {label = "Suicide", type = "button", action = function() SetEntityHealth(PlayerPedId(), 0) ShowNotification("Wasted!") end},
+                    {label = "God Mode", type = "toggle", var = "god"},
+                    {label = "Protection", type = "separator"},
+                    {label = "Uncuff", type = "button", action = function() ShowNotification("Uncuffed") end},
+                    {label = "Blocker", type = "toggle", var = "blocker"},
+                    {label = "Anti Aim", type = "toggle", var = "antiaim"},
+                    {label = "Anti Teleport", type = "toggle", var = "antiteleport"},
+                    {label = "Anti Attach", type = "toggle", var = "antiattach"},
+                    {label = "Anti Freeze", type = "toggle", var = "antifreeze"},
+                    {label = "Invisible", type = "toggle", var = "invis"},
+                    {label = "Super Jump", type = "toggle", var = "superjump"},
+                    {label = "Clear Wanted", type = "button", action = function() ClearPlayerWantedLevel(PlayerId()) ShowNotification("Wanted Cleared!") end},
+                    {label = "Never Wanted", type = "toggle", var = "neverwanted"}
+                }
+            },
+            {
+                name = "Movement",
+                items = {
+                    {label = "Fast Run", type = "toggle", var = "fastrun"},
+                    {label = "Noclip Settings", type = "separator"},
+                    {label = "Noclip", type = "toggle", var = "noclip"},
+                    {label = "Noclip Speed", type = "slider", var = "noclipSpeed", min = 5.0, max = 200.0, step = 5.0}
+                }
+            },
+            {
+                name = "Wardrobe",
+                items = {
+                    {
+                        label = "Animation", 
+                        type = "list", 
+                        list = animations, 
+                        listIndex = 1,
+                        action = function(item)
+                            local ped = PlayerPedId()
+                            if isAnimPlaying then
+                                ClearPedTasks(ped)
+                                isAnimPlaying = false
+                                ShowNotification("Animation stopped!")
+                            else
+                                local anim = item.list[item.listIndex]
+                                RequestAnimDict(anim.dict)
+                                while not HasAnimDictLoaded(anim.dict) do Citizen.Wait(10) end
+                                TaskPlayAnim(ped, anim.dict, anim.anim, 8.0, -8.0, -1, 1, 0, false, false, false)
+                                isAnimPlaying = true
+                                ShowNotification("Playing " .. anim.name .. "!")
+                            end
+                        end
+                    }
+                }
+            }
         }
     },
-    {
-        name = "Vehicle",
-        items = {
-            {label = "Spawner", type = "separator"},
-            {label = "Spawn Adder", type = "button", action = function() SpawnCar("adder") end},
-            {label = "Spawn T20", type = "button", action = function() SpawnCar("t20") end},
-            {label = "Spawn Sanchez", type = "button", action = function() SpawnCar("sanchez") end},
-            {label = "Modifications", type = "separator"},
-            {label = "Vehicle Godmode", type = "toggle", var = "vehiclegod"},
-            {label = "Rainbow Car", type = "toggle", var = "rainbowcar"},
-            {label = "Fix & Clean", type = "button", action = function() 
-                local veh = GetVehiclePedIsIn(PlayerPedId(), false)
-                if veh ~= 0 then SetVehicleFixed(veh) SetVehicleDirtLevel(veh, 0.0) ShowNotification("Vehicle Fixed!") end
-            end},
-            {label = "Delete Vehicle", type = "button", action = function()
-                local veh = GetVehiclePedIsIn(PlayerPedId(), false)
-                if veh ~= 0 then SetEntityAsMissionEntity(veh, true, true) DeleteVehicle(veh) ShowNotification("Vehicle Deleted!") end
-            end}
+    server = {
+        title = "Server",
+        tabs = {
+            {
+                name = "List",
+                items = {} 
+            },
+            {
+                name = "Safe",
+                items = {}
+            },
+            {
+                name = "Troll",
+                items = {}
+            },
+            {
+                name = "Vehicle",
+                items = {}
+            },
+            {
+                name = "Player Actions",
+                hidden = true,
+                parentTab = "List",
+                items = {
+                    {
+                        label = "Teleport To",
+                        type = "button",
+                        action = function()
+                            if selectedPlayerId ~= -1 then
+                                local targetPed = GetPlayerPed(selectedPlayerId)
+                                if targetPed and targetPed ~= 0 then
+                                    local coords = GetEntityCoords(targetPed)
+                                    SetEntityCoords(PlayerPedId(), coords.x, coords.y, coords.z, false, false, false, false)
+                                    ShowNotification("Teleported to " .. (selectedPlayerName or "Player"))
+                                end
+                            end
+                        end
+                    },
+                    {
+                        label = "Spectate",
+                        type = "button",
+                        action = function()
+                            if selectedPlayerId ~= -1 then
+                                local targetPed = GetPlayerPed(selectedPlayerId)
+                                if SpectateActive then
+                                    SpectateActive = false
+                                    SpectateTarget = nil
+                                    NetworkSetInSpectatorMode(false, PlayerPedId())
+                                    ShowNotification("Stopped spectating")
+                                else
+                                    if targetPed and targetPed ~= 0 then
+                                        SpectateActive = true
+                                        SpectateTarget = targetPed
+                                        NetworkSetInSpectatorMode(true, targetPed)
+                                        ShowNotification("Spectating " .. (selectedPlayerName or "Player"))
+                                    end
+                                end
+                            end
+                        end
+                    }
+                }
+            }
         }
     },
-    {
-        name = "Weapons",
-        items = {
-            {label = "Give All Weapons", type = "button", action = function() GiveAllWeapons() end},
-            {label = "Combat Assist", type = "separator"},
-            {label = "Aimbot (Aim Lock)", type = "toggle", var = "aimbot"},
-            {label = "Triggerbot (Auto-Shoot)", type = "toggle", var = "triggerbot"},
-            {label = "Infinite Ammo", type = "toggle", var = "infammo"},
-            {label = "Ammo Effects", type = "separator"},
-            {label = "Fire Ammo", type = "toggle", var = "fireammo"},
-            {label = "Explosive Ammo", type = "toggle", var = "explosiveammo"},
-            {label = "Explosive Melee", type = "toggle", var = "explosivemelee"}
+    combat = {
+        title = "Combat",
+        tabs = {
+            {
+                name = "Combat",
+                items = {
+                    {label = "Aimbot (Aim Lock)", type = "toggle", var = "aimbot"},
+                    {label = "Triggerbot (Auto-Shoot)", type = "toggle", var = "triggerbot"}
+                }
+            }
         }
     },
-    {
-        name = "Visuals",
-        items = {
-            {label = "Vision", type = "separator"},
-            {label = "Name ESP", type = "toggle", var = "esp"},
-            {label = "Box ESP", type = "toggle", var = "boxesp"},
-            {label = "Night Vision", type = "toggle", var = "nightvision"},
-            {label = "Thermal Vision", type = "toggle", var = "thermalvision"},
-            {label = "World", type = "separator"},
-            {label = "Override Time", type = "toggle", var = "timecontrol"},
-            {label = "Time of Day", type = "slider", var = "time", min = 0.0, max = 23.0, step = 1.0}
+    weapon = {
+        title = "Weapon",
+        tabs = {
+            {
+                name = "Weapon",
+                items = {
+                    {label = "Give All Weapons", type = "button", action = function() GiveAllWeapons() end},
+                    {label = "Infinite Ammo", type = "toggle", var = "infammo"},
+                    {label = "Fire Ammo", type = "toggle", var = "fireammo"},
+                    {label = "Explosive Ammo", type = "toggle", var = "explosiveammo"},
+                    {label = "Explosive Melee", type = "toggle", var = "explosivemelee"}
+                }
+            }
         }
     },
-    {
-        name = "Teleport",
-        items = {
-            {label = "Teleportation", type = "separator"},
-            {label = "To Waypoint", type = "button", action = function()
-                local waypoint = GetFirstBlipInfoId(8)
-                if DoesBlipExist(waypoint) then
-                    local coords = GetBlipInfoIdCoord(waypoint)
-                    local ped = PlayerPedId()
-                    SetEntityCoordsNoOffset(ped, coords.x, coords.y, coords.z, false, false, false)
-                    ShowNotification("Teleported to Waypoint!")
-                else
-                    ShowNotification("No Waypoint set!")
-                end
-            end},
-            {label = "Airport", type = "button", action = function() SetEntityCoords(PlayerPedId(), -1037.74, -2738.04, 20.16) ShowNotification("Teleported to Airport") end},
-            {label = "Sandy Shores", type = "button", action = function() SetEntityCoords(PlayerPedId(), 1729.41, 3253.18, 41.13) ShowNotification("Teleported to Sandy Shores") end},
-            {label = "Paleto Bay", type = "button", action = function() SetEntityCoords(PlayerPedId(), 127.42, 6598.05, 31.83) ShowNotification("Teleported to Paleto Bay") end},
-            {label = "Legion Square", type = "button", action = function() SetEntityCoords(PlayerPedId(), 152.26, -1004.47, 29.33) ShowNotification("Teleported to Legion Square") end}
+    vehicle = {
+        title = "Vehicle",
+        tabs = {
+            {
+                name = "Spawner",
+                items = {
+                    {label = "Spawn Adder", type = "button", action = function() SpawnCar("adder") end},
+                    {label = "Spawn T20", type = "button", action = function() SpawnCar("t20") end},
+                    {label = "Spawn Sanchez", type = "button", action = function() SpawnCar("sanchez") end}
+                }
+            },
+            {
+                name = "Modifications",
+                items = {
+                    {label = "Vehicle Godmode", type = "toggle", var = "vehiclegod"},
+                    {label = "Rainbow Car", type = "toggle", var = "rainbowcar"},
+                    {label = "Fix & Clean", type = "button", action = function() 
+                        local veh = GetVehiclePedIsIn(PlayerPedId(), false)
+                        if veh ~= 0 then SetVehicleFixed(veh) SetVehicleDirtLevel(veh, 0.0) ShowNotification("Vehicle Fixed!") end
+                    end},
+                    {label = "Delete Vehicle", type = "button", action = function()
+                        local veh = GetVehiclePedIsIn(PlayerPedId(), false)
+                        if veh ~= 0 then SetEntityAsMissionEntity(veh, true, true) DeleteVehicle(veh) ShowNotification("Vehicle Deleted!") end
+                    end}
+                }
+            }
         }
     },
-    {
-        name = "Animations",
-        items = {
-            {label = "Play / Stop Animation", type = "button", action = function()
-                local ped = PlayerPedId()
-                if isAnimPlaying then
-                    ClearPedTasks(ped)
-                    isAnimPlaying = false
-                    ShowNotification("Animation stopped!")
-                else
-                    local anim = animations[selectedAnimation]
-                    RequestAnimDict(anim.dict)
-                    while not HasAnimDictLoaded(anim.dict) do Citizen.Wait(10) end
-                    TaskPlayAnim(ped, anim.dict, anim.anim, 8.0, -8.0, -1, 1, 0, false, false, false)
-                    isAnimPlaying = true
-                    ShowNotification("Playing " .. anim.name .. "!")
-                end
-            end},
-            {label = "Change Anim Type", type = "button", action = function()
-                selectedAnimation = selectedAnimation + 1
-                if selectedAnimation > #animations then selectedAnimation = 1 end
-                ShowNotification("Selected: " .. animations[selectedAnimation].name)
-            end}
+    destroyer = {
+        title = "Destroyer",
+        tabs = {
+            {
+                name = "Destroyer",
+                items = {}
+            }
         }
     },
-    {
-        name = "Players",
-        items = {} -- Populated dynamically
+    misc = {
+        title = "Misc",
+        tabs = {
+            {
+                name = "Visuals",
+                items = {
+                    {label = "Name ESP", type = "toggle", var = "esp"},
+                    {label = "Box ESP", type = "toggle", var = "boxesp"},
+                    {label = "Night Vision", type = "toggle", var = "nightvision"},
+                    {label = "Thermal Vision", type = "toggle", var = "thermalvision"}
+                }
+            },
+            {
+                name = "World",
+                items = {
+                    {label = "Override Time", type = "toggle", var = "timecontrol"},
+                    {label = "Time of Day", type = "slider", var = "time", min = 0.0, max = 23.0, step = 1.0}
+                }
+            },
+            {
+                name = "Teleport",
+                items = {
+                    {label = "To Waypoint", type = "button", action = function()
+                        local waypoint = GetFirstBlipInfoId(8)
+                        if DoesBlipExist(waypoint) then
+                            local coords = GetBlipInfoIdCoord(waypoint)
+                            local ped = PlayerPedId()
+                            SetEntityCoordsNoOffset(ped, coords.x, coords.y, coords.z, false, false, false)
+                            ShowNotification("Teleported to Waypoint!")
+                        else
+                            ShowNotification("No Waypoint set!")
+                        end
+                    end},
+                    {label = "Airport", type = "button", action = function() SetEntityCoords(PlayerPedId(), -1037.74, -2738.04, 20.16) ShowNotification("Teleported to Airport") end},
+                    {label = "Sandy Shores", type = "button", action = function() SetEntityCoords(PlayerPedId(), 1729.41, 3253.18, 41.13) ShowNotification("Teleported to Sandy Shores") end},
+                    {label = "Paleto Bay", type = "button", action = function() SetEntityCoords(PlayerPedId(), 127.42, 6598.05, 31.83) ShowNotification("Teleported to Paleto Bay") end},
+                    {label = "Legion Square", type = "button", action = function() SetEntityCoords(PlayerPedId(), 152.26, -1004.47, 29.33) ShowNotification("Teleported to Legion Square") end}
+                }
+            }
+        }
     },
-    {
-        name = "Settings",
-        items = {
-            {label = "Menu Configuration", type = "separator"},
-            {label = "Menu Bind", type = "button", action = function(item)
-                waitingForKey = true
-                if duiObj then
-                    SendDuiMessage(duiObj, json.encode({ action = "showKeybind", show = true }))
-                end
-            end}
+    settings = {
+        title = "Settings",
+        tabs = {
+            {
+                name = "Settings",
+                items = {
+                    {label = "Menu Position", type = "list", list = {{name = "Right"}, {name = "Left"}}, listIndex = 1, var = "menuAlign", action = function(item)
+                        state.menuAlign = item.list[item.listIndex].name
+                    end},
+                    {label = "Menu Bind", type = "button", action = function(item)
+                        waitingForKey = true
+                        if duiObj then
+                            SendDuiMessage(duiObj, json.encode({ action = "showKeybind", show = true }))
+                        end
+                    end}
+                }
+            }
         }
     }
-}
+}}
 
 function ShowNotification(text)
     if duiObj then
@@ -261,54 +415,84 @@ end
 function updateUI()
     if not duiObj then return end
     
+    local activeCategory = categories[currentCategory]
+    local tabs = activeCategory.tabs
     local activeTab = tabs[currentTabIdx]
     
     -- Dynamically update Players tab
-    if activeTab.name == "Players" then
+    -- Dynamically update Players tab
+    if currentCategory == "server" and activeTab.name == "List" then
         activeTab.items = {}
-        local nearby = GetNearbyPlayers()
-        for _, p in ipairs(nearby) do
-            table.insert(activeTab.items, {label = p.name .. " [" .. p.dist .. "m]", type = "separator"})
-            
-            table.insert(activeTab.items, {
-                label = "Teleport To",
-                type = "button",
-                action = function()
-                    local targetPed = GetPlayerPed(p.id)
-                    if targetPed and targetPed ~= 0 then
-                        local coords = GetEntityCoords(targetPed)
-                        SetEntityCoords(PlayerPedId(), coords.x, coords.y, coords.z, false, false, false, false)
-                        ShowNotification("Teleported to " .. p.name)
+        
+        table.insert(activeTab.items, {
+            label = playerSearchQuery == "" and "Search Player" or ("Search: " .. playerSearchQuery),
+            type = "button",
+            action = function()
+                if isSearching then return end
+                isSearching = true
+                Citizen.CreateThread(function()
+                    AddTextEntry('SEARCH_PLAYERS', "Search Players")
+                    DisplayOnscreenKeyboard(1, "SEARCH_PLAYERS", "", playerSearchQuery, "", "", "", 30)
+                    while UpdateOnscreenKeyboard() == 0 do
+                        Citizen.Wait(0)
                     end
+                    if GetOnscreenKeyboardResult() then
+                        playerSearchQuery = GetOnscreenKeyboardResult()
+                    end
+                    isSearching = false
+                    updateUI()
+                end)
+            end
+        })
+
+        table.insert(activeTab.items, { label = "Players", type = "separator" })
+
+        local allPlayers = GetAllPlayers()
+        local count = 0
+        local queryLower = string.lower(playerSearchQuery)
+        
+        for _, p in ipairs(allPlayers) do
+            local match = false
+            if playerSearchQuery == "" then
+                match = true
+            else
+                local nameLower = string.lower(p.name)
+                if string.find(nameLower, queryLower, 1, true) then
+                    match = true
                 end
-            })
+            end
             
-            local isSpec = SpectateActive and SpectateTarget == GetPlayerPed(p.id)
-            table.insert(activeTab.items, {
-                label = isSpec and "Stop Spectating" or "Spectate",
-                type = "button",
-                action = function()
-                    local targetPed = GetPlayerPed(p.id)
-                    if SpectateActive then
-                        SpectateActive = false
-                        SpectateTarget = nil
-                        NetworkSetInSpectatorMode(false, PlayerPedId())
-                        ShowNotification("Stopped spectating")
-                    else
-                        if targetPed and targetPed ~= 0 then
-                            SpectateActive = true
-                            SpectateTarget = targetPed
-                            NetworkSetInSpectatorMode(true, targetPed)
-                            ShowNotification("Spectating " .. p.name)
+            if match then
+                count = count + 1
+                table.insert(activeTab.items, {
+                    label = p.name,
+                    type = "button",
+                    playerId = p.id,
+                    playerName = p.name,
+                    action = function(item)
+                        selectedPlayerId = item.playerId
+                        selectedPlayerName = item.playerName
+                        for i, t in ipairs(tabs) do
+                            if t.name == "Player Actions" then
+                                currentTabIdx = i
+                                currentItemIdx = 1
+                                break
+                            end
                         end
                     end
-                end
-            })
+                })
+            end
         end
-        if #activeTab.items == 0 then
-            table.insert(activeTab.items, {label = "No players nearby", type = "button", action = function() end})
+        
+        if count == 0 then
+            table.insert(activeTab.items, {label = "No players found", type = "button", action = function() end})
         end
         if currentItemIdx > #activeTab.items then currentItemIdx = 1 end
+    elseif activeTab.name == "Player Actions" then
+        local targetPed = GetPlayerPed(selectedPlayerId)
+        local isSpec = SpectateActive and targetPed ~= 0 and SpectateTarget == targetPed
+        activeTab.items[2].label = isSpec and "Stop Spectating" or "Spectate"
+        activeTab.items[1].label = "Teleport To " .. (selectedPlayerName or "")
     end
     
     local itemsForJS = {}
@@ -319,6 +503,8 @@ function updateUI()
         elseif item.type == "slider" then
             jsItem.value = state[item.var]
             jsItem.max = item.max
+        elseif item.type == "list" then
+            jsItem.listName = item.list[item.listIndex].name
         end
         table.insert(itemsForJS, jsItem)
     end
@@ -326,16 +512,34 @@ function updateUI()
     local data = {
         action = "update",
         show = menuOpen,
+        menuAlign = state.menuAlign,
         title = "21",
         tabs = {},
-        activeTab = currentTabIdx - 1,
+        activeTab = 0,
         items = itemsForJS,
         selectedIndex = currentItemIdx - 1,
         maxItemsPerPage = 13
     }
     
-    for _, t in ipairs(tabs) do
-        table.insert(data.tabs, t.name)
+    local tabIdxMap = {}
+    local visibleCount = 0
+    for i, t in ipairs(tabs) do
+        if not t.hidden then
+            table.insert(data.tabs, t.name)
+            tabIdxMap[i] = visibleCount
+            visibleCount = visibleCount + 1
+        end
+    end
+    
+    if activeTab.hidden and activeTab.parentTab then
+        for i, t in ipairs(tabs) do
+            if t.name == activeTab.parentTab then
+                data.activeTab = tabIdxMap[i]
+                break
+            end
+        end
+    else
+        data.activeTab = tabIdxMap[currentTabIdx]
     end
     
     SendDuiMessage(duiObj, json.encode(data))
@@ -358,41 +562,26 @@ Citizen.CreateThread(function()
         
         -- Keybind Listener
         if waitingForKey then
-            -- Check for any key press
-            for i=0, 359 do
-                if IsControlJustPressed(0, i) then
-                    if tempMenuOpenKey == nil then
-                        tempMenuOpenKey = i
-                        local keyName = GetKeyName(i)
-                        if duiObj then
-                            SendDuiMessage(duiObj, json.encode({ 
-                                action = "showKeybind", 
-                                show = true,
-                                promptText = "Press ENTER to confirm: " .. keyName,
-                                text = keyName
-                            }))
-                        end
-                        PlaySoundFrontend(-1, "SELECT", "HUD_FRONTEND_DEFAULT_SOUNDSET", true)
-                    else
-                        if i == 176 or i == 191 then -- ENTER
-                            menuOpenKey = tempMenuOpenKey
-                            waitingForKey = false
-                            tempMenuOpenKey = nil
-                            if duiObj then
-                                SendDuiMessage(duiObj, json.encode({ action = "showKeybind", show = false }))
-                            end
-                            ShowNotification("Menu bind set! Key ID: " .. menuOpenKey)
-                            PlaySoundFrontend(-1, "Hack_Success", "DLC_HEIST_BIOLAB_PREP_HACKING_SOUNDS", true)
-                            
-                            if isFirstLaunch then
-                                isFirstLaunch = false
-                                if not menuOpen then
-                                    Citizen.SetTimeout(500, function()
-                                        if not menuOpen then destroyDui() end
-                                    end)
-                                end
-                            end
-                        else
+            -- Check if ENTER is pressed to confirm
+            if tempMenuOpenKey ~= nil and (IsControlJustPressed(0, 176) or IsControlJustPressed(0, 191)) then
+                menuOpenKey = tempMenuOpenKey
+                waitingForKey = false
+                tempMenuOpenKey = nil
+                if duiObj then
+                    SendDuiMessage(duiObj, json.encode({ action = "showKeybind", show = false }))
+                end
+                ShowNotification("Menu bind set! Key ID: " .. menuOpenKey)
+                PlaySoundFrontend(-1, "Hack_Success", "DLC_HEIST_BIOLAB_PREP_HACKING_SOUNDS", true)
+                
+                if isFirstLaunch then
+                    isFirstLaunch = false
+                end
+            else
+                -- Check for any key press to set temp key
+                for i=0, 359 do
+                    -- Ignore typical Enter control mappings so they don't overwrite selection
+                    if i ~= 176 and i ~= 191 and i ~= 18 and i ~= 201 and i ~= 12 then
+                        if IsControlJustPressed(0, i) then
                             tempMenuOpenKey = i
                             local keyName = GetKeyName(i)
                             if duiObj then
@@ -404,9 +593,9 @@ Citizen.CreateThread(function()
                                 }))
                             end
                             PlaySoundFrontend(-1, "SELECT", "HUD_FRONTEND_DEFAULT_SOUNDSET", true)
+                            break
                         end
                     end
-                    break
                 end
             end
         else
@@ -418,27 +607,24 @@ Citizen.CreateThread(function()
                     updateUI()
                 else
                     updateUI() -- Send hide message
-                    Citizen.SetTimeout(500, function()
-                        if not menuOpen then destroyDui() end
-                    end)
                 end
             end
         end
         
-        if (menuOpen or waitingForKey) and duiObj then
-            -- Draw the web UI onto the screen
+        if duiObj then
+            -- Draw the web UI onto the screen (x=0.5 centers the 1920 canvas)
             DrawSprite(txd, txn, 0.5, 0.5, 1.0, 1.0, 0.0, 255, 255, 255, 255)
             
-            if menuOpen and not waitingForKey then
+            if menuOpen and not waitingForKey and not isSearching then
                 -- Disable controls while menu is open to prevent game conflicts
                 DisableControlAction(0, 24, true) -- Attack
                 DisableControlAction(0, 25, true) -- Aim
-                DisableControlAction(0, 1, true) -- Look Left/Right
-                DisableControlAction(0, 2, true) -- Look Up/Down
                 DisableControlAction(0, 44, true) -- Q (Cover)
                 DisableControlAction(0, 38, true) -- E (Context)
                 DisableControlAction(0, 172, true) -- Up
                 DisableControlAction(0, 173, true) -- Down
+                DisableControlAction(0, 174, true) -- Left
+                DisableControlAction(0, 175, true) -- Right
                 DisableControlAction(0, 176, true) -- Enter
                 DisableControlAction(0, 177, true) -- Backspace
                 
@@ -469,38 +655,58 @@ Citizen.CreateThread(function()
                     changed = true
                 end
                 
-                -- Left (Q is 44)
+                -- Tab Left (Q is 44)
                 if IsDisabledControlJustPressed(0, 44) then
-                    local item = activeTab.items[currentItemIdx]
-                    if item.type == "slider" then
-                        state[item.var] = math.max(item.min, state[item.var] - item.step)
-                    else
+                    repeat
                         currentTabIdx = currentTabIdx - 1
                         if currentTabIdx < 1 then currentTabIdx = #tabs end
-                        currentItemIdx = 1
-                        -- Skip initial separator if any
-                        while tabs[currentTabIdx].items[currentItemIdx] and tabs[currentTabIdx].items[currentItemIdx].type == "separator" do
-                            currentItemIdx = currentItemIdx + 1
-                        end
+                    until not tabs[currentTabIdx].hidden
+                    
+                    currentItemIdx = 1
+                    while tabs[currentTabIdx].items[currentItemIdx] and tabs[currentTabIdx].items[currentItemIdx].type == "separator" do
+                        currentItemIdx = currentItemIdx + 1
                     end
                     changed = true
                 end
                 
-                -- Right (E is 38)
+                -- Tab Right (E is 38)
                 if IsDisabledControlJustPressed(0, 38) then
+                    repeat
+                        currentTabIdx = currentTabIdx + 1
+                        if currentTabIdx > #tabs then currentTabIdx = 1 end
+                    until not tabs[currentTabIdx].hidden
+                    
+                    currentItemIdx = 1
+                    while tabs[currentTabIdx].items[currentItemIdx] and tabs[currentTabIdx].items[currentItemIdx].type == "separator" do
+                        currentItemIdx = currentItemIdx + 1
+                    end
+                    changed = true
+                end
+                
+                -- Item Value Left (Arrow Left is 174)
+                if IsDisabledControlJustPressed(0, 174) then
+                    local item = activeTab.items[currentItemIdx]
+                    if item.type == "slider" then
+                        state[item.var] = math.max(item.min, state[item.var] - item.step)
+                        changed = true
+                    elseif item.type == "list" then
+                        item.listIndex = item.listIndex - 1
+                        if item.listIndex < 1 then item.listIndex = #item.list end
+                        changed = true
+                    end
+                end
+                
+                -- Item Value Right (Arrow Right is 175)
+                if IsDisabledControlJustPressed(0, 175) then
                     local item = activeTab.items[currentItemIdx]
                     if item.type == "slider" then
                         state[item.var] = math.min(item.max, state[item.var] + item.step)
-                    else
-                        currentTabIdx = currentTabIdx + 1
-                        if currentTabIdx > #tabs then currentTabIdx = 1 end
-                        currentItemIdx = 1
-                        -- Skip initial separator if any
-                        while tabs[currentTabIdx].items[currentItemIdx] and tabs[currentTabIdx].items[currentItemIdx].type == "separator" do
-                            currentItemIdx = currentItemIdx + 1
-                        end
+                        changed = true
+                    elseif item.type == "list" then
+                        item.listIndex = item.listIndex + 1
+                        if item.listIndex > #item.list then item.listIndex = 1 end
+                        changed = true
                     end
-                    changed = true
                 end
                 
                 -- Enter (176) / Numpad 5 (326)
@@ -520,7 +726,7 @@ Citizen.CreateThread(function()
                         elseif item.var == "infammo" then
                             SetPedInfiniteAmmo(PlayerPedId(), state.infammo)
                         end
-                    elseif item.type == "button" and item.action then
+                    elseif (item.type == "button" or item.type == "list") and item.action then
                         item.action(item)
                     end
                     changed = true
@@ -528,11 +734,24 @@ Citizen.CreateThread(function()
                 
                 -- Backspace (177)
                 if IsDisabledControlJustPressed(0, 177) then
-                    menuOpen = false
-                    updateUI()
-                    Citizen.SetTimeout(500, function()
-                        if not menuOpen then destroyDui() end
-                    end)
+                    if activeTab.hidden and activeTab.parentTab then
+                        for i, t in ipairs(tabs) do
+                            if t.name == activeTab.parentTab then
+                                currentTabIdx = i
+                                currentItemIdx = 1
+                                changed = true
+                                break
+                            end
+                        end
+                    elseif currentCategory ~= "main" then
+                        currentCategory = "main"
+                        currentTabIdx = 1
+                        currentItemIdx = 1
+                        changed = true
+                    else
+                        menuOpen = false
+                        updateUI()
+                    end
                 end
                 
                 if changed then
@@ -594,26 +813,49 @@ Citizen.CreateThread(function()
         if state.explosivemelee then SetExplosiveMeleeThisFrame(PlayerId()) end
         
         if state.noclip then
+            wasNoclip = true
             SetEntityVisible(ped, false, false)
-            local speed = state.noclipSpeed / 10.0
+            SetEntityCollision(ped, false, false)
+            FreezeEntityPosition(ped, true)
             
+            local speed = state.noclipSpeed / 10.0
+            local coords = GetEntityCoords(ped)
             local camRot = GetGameplayCamRot(2)
             local camPitch = camRot.x
             local camHeading = camRot.z
             
             local forward = vector3(-math.sin(math.rad(camHeading)) * math.cos(math.rad(camPitch)), math.cos(math.rad(camHeading)) * math.cos(math.rad(camPitch)), math.sin(math.rad(camPitch)))
             local right = vector3(math.cos(math.rad(camHeading)), math.sin(math.rad(camHeading)), 0.0)
+            local up = vector3(0.0, 0.0, 1.0)
             
-            local velX, velY, velZ = 0.0, 0.0, 0.0
+            local moveX, moveY, moveZ = 0.0, 0.0, 0.0
             
             if IsControlPressed(0, 32) then -- W
-                velX, velY, velZ = velX + forward.x * speed, velY + forward.y * speed, velZ + forward.z * speed
+                moveX, moveY, moveZ = moveX + forward.x, moveY + forward.y, moveZ + forward.z
             end
             if IsControlPressed(0, 33) then -- S
-                velX, velY, velZ = velX - forward.x * speed, velY - forward.y * speed, velZ - forward.z * speed
+                moveX, moveY, moveZ = moveX - forward.x, moveY - forward.y, moveZ - forward.z
+            end
+            if IsControlPressed(0, 34) then -- A
+                moveX, moveY, moveZ = moveX - right.x, moveY - right.y, moveZ - right.z
+            end
+            if IsControlPressed(0, 35) then -- D
+                moveX, moveY, moveZ = moveX + right.x, moveY + right.y, moveZ + right.z
+            end
+            if IsControlPressed(0, 22) then -- Space (Up)
+                moveX, moveY, moveZ = moveX + up.x, moveY + up.y, moveZ + up.z
+            end
+            if IsControlPressed(0, 36) then -- LCtrl (Down)
+                moveX, moveY, moveZ = moveX - up.x, moveY - up.y, moveZ - up.z
             end
             
-            SetEntityVelocity(ped, velX, velY, velZ)
+            local newCoords = coords + vector3(moveX, moveY, moveZ) * speed
+            SetEntityCoordsNoOffset(ped, newCoords.x, newCoords.y, newCoords.z, true, true, true)
+        elseif wasNoclip then
+            wasNoclip = false
+            SetEntityVisible(ped, true, false)
+            SetEntityCollision(ped, true, true)
+            FreezeEntityPosition(ped, false)
         end
         
         if state.triggerbot then

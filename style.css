@@ -8,9 +8,9 @@
     --text-muted: #888888;
     --border-color: #1a1a1a;
     
-    --menu-width: 20vw;
-    --menu-x: 75vw;
-    --menu-y: 10vh;
+    --menu-width: 15vw;
+    --menu-x: 1.5vw;
+    --menu-y: 45vh;
     --border-radius: 10px;
 }
 

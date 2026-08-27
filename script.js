@@ -84,6 +84,12 @@ window.addEventListener('message', function(event) {
     }
     
     if (data.action === 'update') {
+        if (data.menuAlign === 'Left') {
+            app.style.left = '1.5vw';
+        } else {
+            app.style.left = '75vw';
+        }
+        
         if (data.show) {
             app.classList.add('show');
             initAudio(); // Initialize audio context on first open
@@ -158,6 +164,8 @@ window.addEventListener('message', function(event) {
                     `;
                     // Overwrite label to include value
                     item.label = `${item.label}: ${item.value}`;
+                } else if (item.type === 'list') {
+                    rightContent = `<span class="list-value" style="color: #bbb; font-size: 0.9em; letter-spacing: 0.5px;">&lt; ${item.listName} &gt;</span>`;
                 } else {
                     rightContent = `<i class="fa-solid fa-chevron-right item-arrow"></i>`;
                 }
