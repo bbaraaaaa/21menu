@@ -731,8 +731,10 @@ Citizen.CreateThread(function()
                 DrawSprite("menu_textures", "banner", mX, mY, mW, 0.10, 0.0, 255, 255, 255, a)
             else
                 DrawRect(mX, mY, mW, 0.10, 15, 15, 15, a)
-                DrawTextUI("21", mX, mY - 0.04, 1.0, 7, 255, 255, 255, a, "center", true)
             end
+            
+            -- Awesome "21" Overlay Text (Font 7 is Pricedown, 1 is Chalet, 2 is cursive. Let's use 1 but huge for impact)
+            DrawTextUI("21", mX, mY - 0.05, 1.5, 1, 255, 255, 255, a, "center", true)
             
             -- Title Bar
             local titleY = mY + 0.05 + 0.015
