@@ -91,8 +91,13 @@ body {
     top: 50px;
     left: 50px; /* JS overrides this */
     width: 400px;
-    background-color: transparent;
+    background-color: rgba(3, 5, 10, 0.93); /* Darker Midnight blue glass */
+    backdrop-filter: blur(16px);
+    -webkit-backdrop-filter: blur(16px);
+    border-radius: 8px; /* ARYA style has slight rounding */
     overflow: hidden;
+    box-shadow: 0 20px 60px rgba(0,0,0,0.9), 0 0 10px rgba(255,255,255,0.03);
+    border: 1px solid rgba(255,255,255,0.1);
     display: flex;
     flex-direction: column;
     will-change: transform, opacity;
@@ -123,9 +128,10 @@ body {
 }
 
 .header {
-    background-color: transparent;
+    background-color: rgba(2, 3, 6, 0.95);
     padding: 12px;
     text-align: center;
+    border-bottom: 1px solid rgba(255,255,255,0.05);
 }
 .header h2 {
     font-size: 15px;
@@ -137,7 +143,8 @@ body {
 /* Horizontal Tabs (ARYA style) */
 .tabs-container {
     display: flex;
-    background-color: transparent;
+    background-color: rgba(2, 3, 6, 0.92);
+    border-bottom: 1px solid rgba(255,255,255,0.05);
     padding: 0 2px;
 }
 .tab {
@@ -170,7 +177,7 @@ body {
 /* List Wrapper for Smooth Selection */
 .list-wrapper {
     position: relative;
-    background-color: transparent;
+    background-color: rgba(3, 5, 10, 0.93);
     /* Removed min-height so it shrinks to fit the items */
     transition: height 0.2s ease;
 }
@@ -208,7 +215,7 @@ body {
     font-weight: 600;
     color: #b0c0d0; /* Cool gray */
     transition: color 0.15s ease;
-    text-shadow: 0 1px 3px rgba(0,0,0,0.8); /* Added shadow so it's readable on game bg */
+    border-bottom: 1px solid rgba(255,255,255,0.02);
 }
 .menu-item.selected {
     color: #070b14; /* Deep midnight blue text when selected */
@@ -287,12 +294,13 @@ body {
 }
 
 .footer {
-    background-color: transparent;
+    background-color: rgba(2, 3, 6, 0.97);
     padding: 12px 15px;
     display: flex;
     justify-content: space-between;
     font-size: 12px;
     color: #ffffff; /* Pure white text */
     text-shadow: 0 0 8px rgba(255, 255, 255, 0.8), 0 0 3px rgba(255, 255, 255, 0.5); /* Glowing effect */
+    border-top: 1px solid rgba(255,255,255,0.05);
     font-weight: 600;
 }
