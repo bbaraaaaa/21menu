@@ -85,6 +85,14 @@ document.addEventListener("DOMContentLoaded", () => {
     const mainExecutor = document.getElementById('main-executor');
     const aryaLoader = document.getElementById('arya-loader');
 
+    // Auto-bypass login for Executor
+    setTimeout(() => {
+        loginScreen.classList.remove('active');
+        loginScreen.classList.add('hidden');
+        mainExecutor.classList.remove('hidden');
+        mainExecutor.classList.add('active');
+    }, 100);
+
     // ================= LOGIN SYSTEM =================
     const authTabs = document.querySelectorAll('.auth-tab');
     const authBtn = document.getElementById('auth-btn');
