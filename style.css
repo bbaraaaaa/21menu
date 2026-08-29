@@ -92,8 +92,6 @@ body {
     left: 50px; /* JS overrides this */
     width: 400px;
     background-color: rgba(3, 5, 10, 0.93); /* Darker Midnight blue glass */
-    backdrop-filter: blur(16px);
-    -webkit-backdrop-filter: blur(16px);
     border-radius: 8px; /* ARYA style has slight rounding */
     overflow: hidden;
     box-shadow: 0 20px 60px rgba(0,0,0,0.9), 0 0 10px rgba(255,255,255,0.03);
