@@ -178,7 +178,8 @@ body {
 .list-wrapper {
     position: relative;
     background-color: rgba(3, 5, 10, 0.93);
-    min-height: 400px; /* Dynamic via JS but good default */
+    /* Removed min-height so it shrinks to fit the items */
+    transition: height 0.2s ease;
 }
 
 .selection-box {
