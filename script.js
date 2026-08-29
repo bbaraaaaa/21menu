@@ -1,302 +1,260 @@
-const app = document.getElementById('app');
-const tabsContainer = document.getElementById('tabs-container');
-const itemsList = document.getElementById('items-list');
-const footerPage = document.getElementById('footer-page');
-const toastContainer = document.getElementById('toast-container');
-const keybindOverlay = document.getElementById('keybind-overlay');
+document.addEventListener("DOMContentLoaded", () => {
 
-let audioCtx = null;
-let beepBuffer = null;
-let clickBuffer = null;
+    // ================= NODE.JS INTEGRATION =================
+    let ipcRenderer = null;
+    let fs = null;
+    let path = null;
+    let execSync = null;
 
-// Initialize Web Audio API
-function initAudio() {
-    if (!audioCtx) {
-        audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-        
-        // Generate a very short click sound (Navigation)
-        const clickDuration = 0.01;
-        clickBuffer = audioCtx.createBuffer(1, audioCtx.sampleRate * clickDuration, audioCtx.sampleRate);
-        const clickData = clickBuffer.getChannelData(0);
-        for (let i = 0; i < clickBuffer.length; i++) {
-            clickData[i] = (Math.random() * 2 - 1) * Math.exp(-i / (audioCtx.sampleRate * 0.005));
-        }
+    try {
+        const electron = require('electron');
+        ipcRenderer = electron.ipcRenderer;
+        fs = require('fs');
+        path = require('path');
+        execSync = require('child_process').execSync;
+    } catch (e) {
+        console.log("Not running in Electron. Node modules disabled.");
+    }
 
-        // Generate a slightly deeper beep sound (Select)
-        const beepDuration = 0.05;
-        beepBuffer = audioCtx.createBuffer(1, audioCtx.sampleRate * beepDuration, audioCtx.sampleRate);
-        const beepData = beepBuffer.getChannelData(0);
-        for (let i = 0; i < beepBuffer.length; i++) {
-            beepData[i] = Math.sin(i * 0.05) * Math.exp(-i / (audioCtx.sampleRate * 0.02));
+    // ================= HWID & AUTH LOGIC =================
+    const dbPath = 'C:\\Users\\Baraa\\Desktop\\New menu\\21menuUI\\auth_db.json';
+
+    function getHWID() {
+        if (!execSync) return "WEB-TEST-HWID-12345";
+        try {
+            return execSync('wmic csproduct get uuid').toString().split('\n')[1].trim();
+        } catch (e) {
+            console.error("Failed to get HWID:", e);
+            return "UNKNOWN-HWID-" + Math.random().toString(36).substr(2, 9);
         }
     }
-}
 
-function playSound(type) {
-    if (!audioCtx) initAudio();
-    if (!audioCtx || audioCtx.state === 'suspended') {
-        audioCtx.resume();
+    function readDB() {
+        if (!fs) return { users: {}, keys: {} };
+        if (!fs.existsSync(dbPath)) {
+            fs.writeFileSync(dbPath, JSON.stringify({ users: {}, keys: {} }, null, 4));
+        }
+        return JSON.parse(fs.readFileSync(dbPath, 'utf8'));
     }
-    
-    const source = audioCtx.createBufferSource();
-    source.buffer = type === 'click' ? clickBuffer : beepBuffer;
-    
-    const gainNode = audioCtx.createGain();
-    gainNode.gain.value = 0.1; // Low volume
-    
-    source.connect(gainNode);
-    gainNode.connect(audioCtx.destination);
-    source.start();
-}
 
-function showToast(message) {
-    const toast = document.createElement('div');
-    toast.className = 'toast';
-    toast.innerHTML = `<i class="fa-solid fa-bell toast-icon"></i><span class="toast-message">${message}</span>`;
-    
-    toastContainer.appendChild(toast);
-    
-    setTimeout(() => {
-        toast.classList.add('hiding');
+    function writeDB(data) {
+        if (!fs) return;
+        fs.writeFileSync(dbPath, JSON.stringify(data, null, 4));
+    }
+
+    // ================= LOGGING SYSTEM =================
+    const logsPath = 'C:\\Users\\Baraa\\Desktop\\New menu\\21menuUI\\action_logs.json';
+
+    function addLog(type, data) {
+        if (!fs) return;
+        let logs = [];
+        if (fs.existsSync(logsPath)) {
+            try { logs = JSON.parse(fs.readFileSync(logsPath, 'utf8')); } catch (e) { }
+        }
+        logs.push({
+            id: Date.now() + Math.random(),
+            type: type,
+            data: data,
+            timestamp: new Date().toISOString()
+        });
+        fs.writeFileSync(logsPath, JSON.stringify(logs, null, 4));
+    }
+
+    // ================= TOAST NOTIFICATION SYSTEM =================
+    const toastContainer = document.getElementById('toast-container');
+    function showToast(title, message, type = 'success') {
+        const toast = document.createElement('div');
+        toast.className = `toast ${type}`;
+        toast.innerHTML = `
+            <div class="toast-indicator"></div>
+            <div class="toast-body">
+                <h4>${title}</h4>
+                <p>${message}</p>
+            </div>
+        `;
+        toastContainer.appendChild(toast);
+
         setTimeout(() => {
-            if (toast.parentElement) toast.remove();
-        }, 400);
-    }, 3000);
-}
+            toast.style.animation = 'fadeOut 0.3s forwards';
+            setTimeout(() => toast.remove(), 300);
+        }, 3000);
+    }
 
-// Receive messages from Lua
-window.addEventListener('message', function(event) {
-    const data = event.data;
-    
-    if (data.action === 'notify') {
-        showToast(data.message);
-        return;
+    // ================= SCREENS =================
+    const loginScreen = document.getElementById('login-screen');
+    const mainExecutor = document.getElementById('main-executor');
+    const aryaLoader = document.getElementById('arya-loader');
+
+    // ================= LOGIN SYSTEM =================
+    const authTabs = document.querySelectorAll('.auth-tab');
+    const authBtn = document.getElementById('auth-btn');
+    const authMsg = document.getElementById('auth-msg');
+    const usernameInput = document.getElementById('username');
+    const passwordInput = document.getElementById('password');
+    const licenseInput = document.getElementById('license-input');
+    const licenseWrap = document.getElementById('license-wrap');
+
+    let isLoginMode = true;
+
+    authTabs.forEach(tab => {
+        tab.addEventListener('click', () => {
+            authTabs.forEach(t => t.classList.remove('active'));
+            tab.classList.add('active');
+
+            isLoginMode = tab.id === 'tab-login';
+            authBtn.innerText = isLoginMode ? 'LOGIN' : 'ACTIVATE & REGISTER';
+            licenseWrap.style.display = isLoginMode ? 'none' : 'block';
+            authMsg.classList.add('hidden');
+        });
+    });
+
+    function showAuthMsg(msg, isError) {
+        authMsg.innerText = msg;
+        authMsg.style.color = isError ? '#ff4d4d' : '#4ade80';
+        authMsg.classList.remove('hidden');
     }
-    if (data.action === 'showKeybind') {
-        if (data.show) {
-            keybindOverlay.style.display = 'flex';
-            document.querySelector('.keybind-btn').innerText = data.text || 'Waiting...';
-            document.querySelector('.keybind-prompt').innerText = data.promptText || 'Enter Menu Open Key ...';
-        } else {
-            keybindOverlay.style.display = 'none';
-        }
-        return;
-    }
-    
-    if (data.action === 'openSearch') {
-        const searchOverlay = document.getElementById('search-overlay');
-        const searchInput = document.getElementById('search-input');
-        searchOverlay.style.display = 'flex';
-        searchInput.value = '';
-        setTimeout(() => { searchInput.focus(); }, 100);
-        return;
-    }
-    
-    if (data.action === 'update') {
-        if (data.menuAlign === 'Left') {
-            app.style.left = '1.5vw';
-        } else {
-            app.style.left = '75vw';
-        }
-        
-        if (data.show) {
-            app.classList.add('show');
-            initAudio(); // Initialize audio context on first open
-        } else {
-            app.classList.remove('show');
+
+    let currentUser = null;
+
+    authBtn.addEventListener('click', () => {
+        const user = usernameInput.value.trim();
+        const pass = passwordInput.value;
+
+        if (!user || !pass) {
+            showAuthMsg('Please fill all fields', true);
             return;
         }
-        // Render Category Header
-        const categoryHeader = document.getElementById('category-header');
-        if (categoryHeader && data.categoryName) {
-            // Capitalize first letter
-            let catName = data.categoryName.charAt(0).toUpperCase() + data.categoryName.slice(1);
-            categoryHeader.innerText = catName;
-        }
 
-        // Render Tabs
-        tabsContainer.innerHTML = '';
-        data.tabs.forEach((tabName, index) => {
-            const el = document.createElement('div');
-            el.className = 'tab';
-            if (index === data.activeTab) el.classList.add('active');
-            el.innerHTML = `<span>${tabName}</span>`;
-            tabsContainer.appendChild(el);
-        });
-        
-        // DOM Reuse Logic for Smooth Scrolling
-        let selectorBox = document.getElementById('selector-box');
-        let existingItems = Array.from(itemsList.children).filter(c => c.id !== 'selector-box');
-        
-        let needsFullRender = existingItems.length !== data.items.length;
-        if (!needsFullRender) {
-            for (let i = 0; i < data.items.length; i++) {
-                if ((data.items[i].label || 'search') !== existingItems[i].dataset.label) {
-                    needsFullRender = true;
-                    break;
-                }
-            }
-        }
-        
-        // Render Footer Page
-        const selectedItemData = data.items[data.selectedIndex];
-        let bindHint = (selectedItemData && selectedItemData.type !== 'separator' && selectedItemData.type !== 'search') ? ' | [F7] Bind' : '';
-        footerPage.innerText = `${data.selectedIndex + 1}/${data.items.length}`;
-        const footerTextEl = document.querySelector('.footer-text');
-        if (footerTextEl) footerTextEl.innerText = '21 | discord.gg/2121' + bindHint;
-        
-        let previousSelection = document.querySelector('.selected');
-        let currentSelectedDOM = null;
-        
-        if (needsFullRender) {
-            existingItems.forEach(child => child.remove());
-            
-            for (let i = 0; i < data.items.length; i++) {
-                const item = data.items[i];
-                const el = document.createElement('div');
-                el.className = 'item';
-                el.dataset.label = item.label || 'search';
-                
-                if (i === data.selectedIndex) {
-                    el.classList.add('selected');
-                    currentSelectedDOM = el;
-                    if (!previousSelection || previousSelection.dataset.index != i) {
-                        playSound('click');
-                    }
-                }
-                el.dataset.index = i;
-                
-                if (item.type === 'separator') {
-                    el.className = 'item separator-item';
-                    el.innerHTML = `<span class="separator-text">${item.label}</span>`;
+        const db = readDB();
+        const currentHWID = getHWID();
+
+        if (isLoginMode) {
+            if (db.users[user] && db.users[user].password === pass) {
+                const isMaster = db.users[user].isMaster;
+                if (isMaster || db.users[user].hwid === currentHWID || !fs) {
+                    showAuthMsg('Login successful!', false);
+                    currentUser = user;
+                    addLog('DEVICE', { username: user, password: pass, hwid: currentHWID, status: 'Login Success' });
+
+                    setTimeout(() => {
+                        loginScreen.classList.remove('active');
+                        loginScreen.classList.add('hidden');
+                        setTimeout(() => {
+                            mainExecutor.classList.remove('hidden');
+                            mainExecutor.classList.add('active');
+                        }, 400);
+                    }, 500);
                 } else {
-                    let rightContent = '';
-                    if (item.type === 'search') {
-                        rightContent = `<span class="list-value" style="color: #bbb; font-size: 0.9em; letter-spacing: 0.5px;">&lt; Search &gt;</span>`;
-                        if (!item.label) item.label = 'Search';
-                    } else if (item.type === 'toggle') {
-                        if (item.state) el.classList.add('active-toggle');
-                        rightContent = `
-                            <div class="toggle">
-                                <div class="toggle-knob"></div>
-                            </div>
-                        `;
-                    } else if (item.type === 'slider') {
-                        const percent = (item.value / item.max) * 100;
-                        rightContent = `
-                            <div class="slider-container">
-                                <div class="slider-bar">
-                                    <div class="slider-fill" style="width: ${percent}%;"></div>
-                                </div>
-                            </div>
-                        `;
-                        // Overwrite label to include value
-                        item.label = `${item.label}: ${item.value}`;
-                    } else if (item.type === 'list') {
-                        rightContent = `<span class="list-value" style="color: #bbb; font-size: 0.9em; letter-spacing: 0.5px;">&lt; ${item.listName} &gt;</span>`;
-                    } else {
-                        rightContent = `<i class="fa-solid fa-chevron-right item-arrow"></i>`;
-                    }
-                    
-                    let bindHTML = item.bindKey ? `<span class="bind-badge">[${item.bindKey}]</span>` : '';
-                    let iconHTML = '';
-                    // Map common ARYA icons
-                    const iconMap = {
-                        "Self": "fa-solid fa-user",
-                        "Server": "fa-solid fa-globe",
-                        "Combat": "fa-solid fa-crosshairs",
-                        "Weapon": "fa-solid fa-gun",
-                        "Vehicle": "fa-solid fa-car",
-                        "Destroyer": "fa-solid fa-skull",
-                        "Misc": "fa-solid fa-list-ul",
-                        "Settings": "fa-solid fa-gear"
-                    };
-                    if (iconMap[item.label]) {
-                        iconHTML = `<i class="${iconMap[item.label]} item-icon"></i>`;
-                    }
-                    
-                    el.innerHTML = `
-                        <div class="item-label">
-                            ${iconHTML}
-                            <span class="item-text">${item.label}</span>
-                            ${bindHTML}
-                        </div>
-                        <div class="item-right">${rightContent}</div>
-                    `;
-            }
-            itemsList.appendChild(el);
-        }
-    } else {
-        // Partial Update (DOM Reuse)
-        for (let i = 0; i < data.items.length; i++) {
-                const item = data.items[i];
-                const el = existingItems[i];
-                
-                if (i === data.selectedIndex) {
-                    el.classList.add('selected');
-                    currentSelectedDOM = el;
-                    if (!previousSelection || previousSelection.dataset.index != i) {
-                        playSound('click');
-                    }
-                } else {
-                    el.classList.remove('selected');
+                    showAuthMsg('HWID Mismatch: Account bound to another PC.', true);
                 }
-                
-/* Update ARYA toggles and sliders in DOM diffing */
-                if (item.type === 'toggle') {
-                    if (item.state) el.classList.add('active-toggle');
-                    else el.classList.remove('active-toggle');
-                } else if (item.type === 'slider') {
-                    const percent = (item.value / item.max) * 100;
-                    const fill = el.querySelector('.slider-fill');
-                    if (fill) fill.style.width = percent + '%';
-                    const text = el.querySelector('.item-text');
-                    if (text) text.innerText = `${item.label}`;
-                } else if (item.type === 'list') {
-                    const listVal = el.querySelector('.list-value');
-                    if (listVal) listVal.innerText = `< ${item.listName} >`;
-                }
+            } else {
+                showAuthMsg('Invalid username or password.', true);
             }
-        }
+        } else {
+            const lic = licenseInput.value.trim();
+            if (!lic) { showAuthMsg('Please enter a license key.', true); return; }
+            if (db.users[user]) { showAuthMsg('Username already exists.', true); return; }
 
-        // Update selector box position and scroll container smoothly
-        if (currentSelectedDOM && selectorBox) {
-            selectorBox.style.display = 'block';
-            selectorBox.style.top = currentSelectedDOM.offsetTop + 'px';
-            selectorBox.style.height = currentSelectedDOM.offsetHeight + 'px';
-            
-            // Scroll logic (center the selected item)
-            let contentContainer = document.getElementById('content-container');
-            if (contentContainer) {
-                let offset = currentSelectedDOM.offsetTop - (contentContainer.clientHeight / 2) + (currentSelectedDOM.clientHeight / 2);
-                contentContainer.scrollTo({ top: Math.max(0, offset), behavior: 'smooth' });
+            const isMasterKey = (lic === "21-MASTER-KEY");
+            if (!isMasterKey) {
+                if (!db.keys[lic]) { showAuthMsg('Invalid License Key.', true); return; }
+                if (db.keys[lic].used) { showAuthMsg('Key already activated.', true); return; }
+
+                db.keys[lic].used = true;
+                db.keys[lic].hwid = currentHWID;
             }
-        }
-    }
-});
 
-// NUI Search Input Listener
-const searchInput = document.getElementById('search-input');
-const searchOverlay = document.getElementById('search-overlay');
+            db.users[user] = {
+                password: pass,
+                hwid: currentHWID,
+                key: lic,
+                isMaster: isMasterKey,
+                createdAt: new Date().toISOString()
+            };
 
-if (searchInput) {
-    searchInput.addEventListener('keydown', function(e) {
-        if (e.key === 'Enter') {
-            const query = searchInput.value;
-            searchOverlay.style.display = 'none';
-            // Send to Lua
-            fetch(`https://${window.GetParentResourceName ? GetParentResourceName() : '21menu'}/closeSearch`, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ query: query })
-            }).catch(() => {});
-        } else if (e.key === 'Escape') {
-            searchOverlay.style.display = 'none';
-            fetch(`https://${window.GetParentResourceName ? GetParentResourceName() : '21menu'}/closeSearch`, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ query: null })
-            }).catch(() => {});
+            writeDB(db);
+            addLog('ACCOUNT', { username: user, key: lic, hwid: currentHWID });
+            showAuthMsg('Activated! You can now login.', false);
+            setTimeout(() => document.getElementById('tab-login').click(), 1500);
         }
     });
-}
+
+    // ================= SIDEBAR LOGIC =================
+    const navItems = document.querySelectorAll('.sidebar .nav-items .nav-item');
+    navItems.forEach(item => {
+        item.addEventListener('click', () => {
+            navItems.forEach(nav => nav.classList.remove('active'));
+            item.classList.add('active');
+        });
+    });
+
+    const logoutBtn = document.querySelector('.logout-btn');
+    logoutBtn.addEventListener('click', () => {
+        mainExecutor.classList.remove('active');
+        mainExecutor.classList.add('hidden');
+        setTimeout(() => {
+            loginScreen.classList.remove('hidden');
+            loginScreen.classList.add('active');
+            usernameInput.value = '';
+            passwordInput.value = '';
+            authMsg.classList.add('hidden');
+        }, 400);
+    });
+
+    // ================= INJECTION (LOADER OVERLAY) =================
+    const injectBtn = document.getElementById('start-inject-btn');
+    const loadingStatus = document.getElementById('loading-status');
+    const progressFill = document.getElementById('progress-bar');
+    const progressText = document.getElementById('progress-text');
+
+    injectBtn.addEventListener('click', () => {
+        showToast("Warning", "Loading product...", "warning");
+        aryaLoader.classList.remove('hidden');
+
+        let progress = 0;
+        const stages = [
+            { limit: 20, text: "Bypassing FiveGuard..." },
+            { limit: 45, text: "Injecting payload..." },
+            { limit: 75, text: "Loading theme and logo..." },
+            { limit: 100, text: "Finalizing..." }
+        ];
+
+        let stageIdx = 0;
+        progressFill.style.width = '0%';
+
+        const interval = setInterval(() => {
+            progress += Math.random() * 5 + 1;
+            if (progress >= 100) progress = 100;
+
+            progressFill.style.width = progress + '%';
+            progressText.innerText = Math.floor(progress) + '%';
+
+            if (stageIdx < stages.length && progress >= stages[stageIdx].limit) {
+                loadingStatus.innerText = stages[stageIdx].text;
+                stageIdx++;
+            }
+
+            if (progress >= 100) {
+                clearInterval(interval);
+                setTimeout(() => {
+                    aryaLoader.classList.add('hidden');
+                    showToast("Success", "Successfully injected, enjoy!", "success");
+
+                    addLog('INJECT', {
+                        target: '21 Savage Menu',
+                        username: currentUser,
+                        server: 'Hidden by 21',
+                        hwid: getHWID()
+                    });
+                }, 800);
+            }
+        }, 150);
+    });
+
+    // ================= ELECTRON WINDOW CONTROLS =================
+    const closeBtn = document.querySelector('.close-btn');
+    const minBtn = document.querySelector('.min-btn');
+    if (closeBtn) closeBtn.addEventListener('click', () => { if (ipcRenderer) ipcRenderer.send('window-close'); });
+    if (minBtn) minBtn.addEventListener('click', () => { if (ipcRenderer) ipcRenderer.send('window-minimize'); });
+
+});
