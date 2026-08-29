@@ -88,9 +88,9 @@ body {
 /* Menu Container */
 #menu-container {
     position: absolute;
-    top: 50px;
-    left: 50px; /* JS overrides this */
-    width: 400px;
+    bottom: 24vh; /* Float just above the minimap */
+    left: 20px; /* JS overrides this for Right alignment */
+    width: 340px; /* Made smaller */
     background-color: rgba(3, 5, 10, 0.93); /* Darker Midnight blue glass */
     border-radius: 8px; /* ARYA style has slight rounding */
     overflow: hidden;
@@ -103,7 +103,7 @@ body {
 
 .banner {
     width: 100%;
-    height: 120px;
+    height: 105px; /* Slightly smaller for the new width */
     background-color: #000;
     position: relative;
 }
@@ -119,7 +119,7 @@ body {
     left: 50%;
     transform: translate(-50%, -50%);
     width: auto !important;
-    height: 105px !important; /* Slightly larger for better fit */
+    height: 90px !important; /* Scaled down logo */
     object-fit: contain !important;
     z-index: 2;
     pointer-events: none;
@@ -184,7 +184,7 @@ body {
     position: absolute;
     left: 0;
     right: 0;
-    height: 40px;
+    height: 36px;
     background-color: #fff; /* Pure white */
     box-shadow: 0 0 15px rgba(255, 255, 255, 0.6), 0 0 5px rgba(255, 255, 255, 0.8); /* Intense white glow */
     transition: transform 0.12s cubic-bezier(0.2, 0.8, 0.2, 1); /* 60fps Smooth glide! */
@@ -204,15 +204,16 @@ body {
 }
 
 .menu-item {
-    height: 40px;
+    height: 36px; /* Slightly smaller items */
     padding: 0 15px;
     display: flex;
     justify-content: space-between;
     align-items: center;
-    font-size: 14px;
+    font-size: 13.5px;
     font-weight: 600;
     color: #b0c0d0; /* Cool gray */
     transition: color 0.15s ease;
+    text-shadow: 0 1px 3px rgba(0,0,0,0.8); /* Added shadow so it's readable on game bg */
     border-bottom: 1px solid rgba(255,255,255,0.02);
 }
 .menu-item.selected {

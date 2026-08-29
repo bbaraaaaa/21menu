@@ -26,9 +26,9 @@ window.addEventListener('message', function(event) {
         
         if (data.align === "Right") {
             menuContainer.style.left = 'auto';
-            menuContainer.style.right = '50px';
+            menuContainer.style.right = '20px';
         } else {
-            menuContainer.style.left = '50px';
+            menuContainer.style.left = '20px';
             menuContainer.style.right = 'auto';
         }
     }
@@ -118,7 +118,7 @@ window.addEventListener('message', function(event) {
         let selBox = document.getElementById('selection-box');
         if (visualSelectedIndex >= 0) {
             selBox.className = 'selection-box active';
-            selBox.style.transform = `translateY(${visualSelectedIndex * 40}px)`;
+            selBox.style.transform = `translateY(${visualSelectedIndex * 36}px)`;
         } else {
             selBox.className = 'selection-box';
         }
