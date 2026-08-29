@@ -1,9 +1,12 @@
 window.addEventListener('message', function(event) {
     let data = event.data;
 
+    let keybindOverlay = document.getElementById('keybind-overlay');
+    let menuContainer = document.getElementById('menu-container');
+
     if (data.action === "showKeybind") {
-        document.getElementById('keybind-overlay').style.display = 'flex';
-        document.getElementById('menu-container').style.display = 'none';
+        keybindOverlay.className = 'fade-visible';
+        menuContainer.className = 'fade-hidden';
         
         if (data.keyName) {
             document.getElementById('keybind-inst').innerText = "Press ENTER to confirm: " + data.keyName;
@@ -18,23 +21,44 @@ window.addEventListener('message', function(event) {
         }
     }
     else if (data.action === "showMenu") {
-        document.getElementById('keybind-overlay').style.display = 'none';
-        document.getElementById('menu-container').style.display = 'block';
+        keybindOverlay.className = 'fade-hidden';
+        menuContainer.className = 'fade-visible';
         
         if (data.align === "Right") {
-            document.getElementById('menu-container').style.left = 'auto';
-            document.getElementById('menu-container').style.right = '100px';
+            menuContainer.style.left = 'auto';
+            menuContainer.style.right = '50px';
         } else {
-            document.getElementById('menu-container').style.left = '100px';
-            document.getElementById('menu-container').style.right = 'auto';
+            menuContainer.style.left = '50px';
+            menuContainer.style.right = 'auto';
         }
     }
     else if (data.action === "hideMenu") {
-        document.getElementById('keybind-overlay').style.display = 'none';
-        document.getElementById('menu-container').style.display = 'none';
+        keybindOverlay.className = 'fade-hidden';
+        menuContainer.className = 'fade-hidden';
     }
     else if (data.action === "updateData") {
-        document.getElementById('sub-header-title').innerText = data.category + " > " + data.tab;
+        document.getElementById('category-title').innerText = data.category;
+        
+        // Ensure allTabs exists, fallback to single tab if not provided by lua
+        let allTabs = data.allTabs || [data.tab];
+        
+        if (allTabs && allTabs.length > 0) {
+            let tabsHtml = "";
+            let numTabs = allTabs.length;
+            
+            if(numTabs === 1) {
+                tabsHtml = `<div class="tab active">${allTabs[0]}</div>`;
+            } else {
+                for (let i = 0; i < numTabs; i++) {
+                    let isActive = (data.tab === allTabs[i]) ? "active" : "";
+                    tabsHtml += `<div class="tab ${isActive}">${allTabs[i]}</div>`;
+                }
+            }
+            document.getElementById('tabs-container').innerHTML = tabsHtml;
+            document.getElementById('tabs-container').style.display = 'flex';
+        } else {
+            document.getElementById('tabs-container').style.display = 'none';
+        }
         
         let listHtml = "";
         let items = data.items;
@@ -46,15 +70,22 @@ window.addEventListener('message', function(event) {
             startIndex = selectedIndex - maxItems + 1;
         }
         
+        let visualSelectedIndex = -1;
+        
         for (let i = 0; i < Math.min(items.length, maxItems); i++) {
             let actualIndex = startIndex + i;
             let item = items[actualIndex];
             if (!item) continue;
             
-            let isSelected = (actualIndex === selectedIndex) ? "selected" : "";
+            let isSelected = (actualIndex === selectedIndex);
+            if (isSelected && item.type !== "separator") {
+                visualSelectedIndex = i;
+            }
+            let selectedClass = isSelected ? "selected" : "";
+            let sepClass = (item.type === "separator") ? "menu-separator" : "";
             
             if (item.type === "separator") {
-                listHtml += `<div class="menu-item ${isSelected}" style="justify-content:center; color:#888;">--- ${item.label} ---</div>`;
+                listHtml += `<div class="menu-item ${selectedClass} ${sepClass}">--- ${item.label} ---</div>`;
             } else {
                 let rightContent = "";
                 
@@ -74,7 +105,7 @@ window.addEventListener('message', function(event) {
                 let iconHtml = item.icon ? `<i class="fa-solid ${item.icon}"></i>` : "";
                 
                 listHtml += `
-                <div class="menu-item ${isSelected}">
+                <div class="menu-item ${selectedClass}">
                     <div class="left">${iconHtml} ${item.label}</div>
                     <div class="right">${rightContent}</div>
                 </div>`;
@@ -82,6 +113,16 @@ window.addEventListener('message', function(event) {
         }
         
         document.getElementById('items-list').innerHTML = listHtml;
+        
+        // Move selection box smoothly using translateY
+        let selBox = document.getElementById('selection-box');
+        if (visualSelectedIndex >= 0) {
+            selBox.className = 'selection-box active';
+            selBox.style.transform = `translateY(${visualSelectedIndex * 40}px)`;
+        } else {
+            selBox.className = 'selection-box';
+        }
+        
         let totalItems = items.length;
         if(totalItems > 0) {
             document.getElementById('pagination').innerText = (selectedIndex + 1) + "/" + totalItems;

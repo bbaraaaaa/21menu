@@ -11,7 +11,7 @@
 <body>
     
     <!-- Keybind Popup Overlay -->
-    <div id="keybind-overlay" style="display: flex;">
+    <div id="keybind-overlay" class="fade-hidden">
         <div class="keybind-box">
             <div class="keybind-header">
                 <img src="https://i.imgur.com/3q1jO7F.png" alt="icon">
@@ -24,24 +24,52 @@
     </div>
 
     <!-- Main Menu UI -->
-    <div id="menu-container" style="display: none;">
+    <div id="menu-container" class="fade-visible" style="opacity: 1; pointer-events: all; transform: scale(1);">
         <div class="banner">
             <img src="banner.jpg" alt="21 SAVAGE" onerror="this.src='https://i.imgur.com/c6Oqz7P.png'">
         </div>
+        
         <div class="header">
-            <h2>MAIN MENU</h2>
-        </div>
-        <div class="sub-header" id="sub-header-title">
-            Main menu
+            <h2 id="category-title">MAIN MENU</h2>
         </div>
         
-        <div class="items-list" id="items-list">
-            <!-- Items injected by JS -->
+        <!-- ARYA Horizontal Tabs -->
+        <div class="tabs-container" id="tabs-container">
+            <!-- Default for preview -->
+            <div class="tab active">List</div>
+            <div class="tab">Safe</div>
+            <div class="tab">Troll</div>
+            <div class="tab">Vehicle</div>
+        </div>
+        
+        <!-- Smooth Slider Selection -->
+        <div class="list-wrapper">
+            <div class="selection-box active" id="selection-box" style="transform: translateY(40px);"></div>
+            <div class="items-list" id="items-list">
+                <!-- Preview items so he can see it immediately in browser -->
+                <div class="menu-item">
+                    <div class="left">Search</div>
+                    <div class="right"><span>< Search ></span></div>
+                </div>
+                <div class="menu-item selected">
+                    <div class="left">Method</div>
+                    <div class="right"><span>< Default ></span></div>
+                </div>
+                <div class="menu-item">
+                    <div class="left">Show Selected Player Info</div>
+                    <div class="right"><div class="toggle-switch"></div></div>
+                </div>
+                <div class="menu-item menu-separator">--- Players ---</div>
+                <div class="menu-item">
+                    <div class="left">BluntSnaily2559</div>
+                    <div class="right"><div class="toggle-switch on"></div></div>
+                </div>
+            </div>
         </div>
 
         <div class="footer">
-            <span>21 | discord.gg/0e | [F7] Bind</span>
-            <span id="pagination">1/8</span>
+            <span class="footer-left">21 | discord.gg/0e | [F7] Bind</span>
+            <span class="footer-right" id="pagination">1/21</span>
         </div>
     </div>
 

@@ -7,19 +7,34 @@
 }
 
 body {
-    background-color: transparent;
+    background-color: transparent; /* For game overlay */
     overflow: hidden;
     color: white;
+}
+
+.fade-hidden {
+    opacity: 0;
+    pointer-events: none;
+    transform: scale(0.97);
+    transition: opacity 0.3s cubic-bezier(0.4, 0, 0.2, 1), transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+.fade-visible {
+    opacity: 1;
+    pointer-events: all;
+    transform: scale(1);
+    transition: opacity 0.3s cubic-bezier(0.4, 0, 0.2, 1), transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
 /* Keybind Popup */
 #keybind-overlay {
     position: absolute;
     top: 0; left: 0; right: 0; bottom: 0;
-    background-color: rgba(0,0,0,0.5);
+    background-color: rgba(0,0,0,0.6);
     display: flex;
     justify-content: center;
     align-items: center;
+    backdrop-filter: blur(5px);
+    z-index: 9999;
 }
 
 .keybind-box {
@@ -28,7 +43,7 @@ body {
     border-radius: 12px;
     padding: 20px;
     width: 350px;
-    box-shadow: 0 10px 30px rgba(0,0,0,0.8);
+    box-shadow: 0 15px 40px rgba(0,0,0,0.9);
 }
 
 .keybind-header {
@@ -67,26 +82,29 @@ body {
     font-weight: 600;
     color: #fff;
     cursor: pointer;
-    transition: all 0.2s;
+    transition: all 0.2s ease;
 }
 
 /* Menu Container */
 #menu-container {
     position: absolute;
-    top: 100px;
-    left: 100px;
-    width: 380px;
-    background-color: rgba(10, 10, 10, 0.95);
-    border-radius: 8px;
+    top: 50px;
+    left: 50px; /* JS overrides this */
+    width: 400px;
+    background-color: #000;
+    border-radius: 8px; /* ARYA style has slight rounding */
     overflow: hidden;
-    box-shadow: 0 15px 40px rgba(0,0,0,0.7);
-    border: 1px solid #222;
+    box-shadow: 0 20px 60px rgba(0,0,0,0.9);
+    border: 1px solid #1c1c1c;
+    display: flex;
+    flex-direction: column;
 }
 
 .banner {
     width: 100%;
     height: 120px;
     background-color: #000;
+    position: relative;
 }
 .banner img {
     width: 100%;
@@ -96,52 +114,100 @@ body {
 
 .header {
     background-color: #000;
-    padding: 10px;
+    padding: 12px;
     text-align: center;
     border-bottom: 1px solid #222;
 }
 .header h2 {
-    font-size: 16px;
+    font-size: 15px;
     font-weight: 800;
-    letter-spacing: 1px;
+    color: #fff;
+    text-transform: uppercase;
 }
 
-.sub-header {
-    background-color: #151515;
-    padding: 8px 15px;
-    font-size: 14px;
-    font-weight: 600;
+/* Horizontal Tabs (ARYA style) */
+.tabs-container {
+    display: flex;
+    background-color: #121212;
+    border-bottom: 1px solid #222;
+    padding: 0 2px;
+}
+.tab {
+    flex: 1;
     text-align: center;
-    border-bottom: 1px solid #333;
+    padding: 10px 0;
+    font-size: 13px;
+    font-weight: 600;
+    color: #666;
+    position: relative;
+    transition: color 0.3s ease;
+    cursor: pointer;
+}
+.tab.active {
+    color: #fff;
+}
+.tab.active::after {
+    content: '';
+    position: absolute;
+    bottom: -1px;
+    left: 15%;
+    width: 70%;
+    height: 2px;
+    background-color: #fff;
+    border-radius: 2px;
+}
+
+/* List Wrapper for Smooth Selection */
+.list-wrapper {
+    position: relative;
+    background-color: #050505;
+    min-height: 400px; /* Dynamic via JS but good default */
+}
+
+.selection-box {
+    position: absolute;
+    left: 0;
+    right: 0;
+    height: 40px;
+    background-color: #fff;
+    transition: transform 0.15s cubic-bezier(0.2, 0.8, 0.2, 1); /* Smooth glide! */
+    z-index: 1;
+    opacity: 0;
+}
+.selection-box.active {
+    opacity: 1;
 }
 
 .items-list {
-    max-height: 400px;
-    overflow: hidden;
-    background-color: #0a0a0a;
+    position: relative;
+    z-index: 2;
+    display: flex;
+    flex-direction: column;
 }
 
 .menu-item {
-    padding: 12px 15px;
+    height: 40px;
+    padding: 0 15px;
     display: flex;
     justify-content: space-between;
     align-items: center;
     font-size: 14px;
-    font-weight: 500;
+    font-weight: 600;
+    color: #ccc;
+    transition: color 0.15s ease;
     border-bottom: 1px solid rgba(255,255,255,0.02);
 }
 .menu-item.selected {
-    background-color: #fff;
-    color: #000;
+    color: #000; /* Black text when white selection box is underneath */
 }
 
 .menu-item .left {
     display: flex;
     align-items: center;
-    gap: 10px;
+    gap: 12px;
 }
 .menu-item .left i {
-    width: 20px;
+    width: 18px;
     text-align: center;
 }
 
@@ -149,16 +215,17 @@ body {
     display: flex;
     align-items: center;
     font-weight: 600;
+    font-size: 13px;
 }
 
-/* iOS Toggle Style */
+/* Smooth Toggle Style */
 .toggle-switch {
     width: 36px;
     height: 20px;
     background-color: #333;
     border-radius: 20px;
     position: relative;
-    transition: 0.2s;
+    transition: background-color 0.3s ease;
 }
 .toggle-switch::after {
     content: '';
@@ -167,33 +234,52 @@ body {
     left: 2px;
     width: 16px;
     height: 16px;
-    background-color: #fff;
+    background-color: #aaa;
     border-radius: 50%;
-    transition: 0.2s;
+    transition: transform 0.3s cubic-bezier(0.4, 0.0, 0.2, 1), background-color 0.3s ease;
 }
-.menu-item.selected .toggle-switch {
-    background-color: #ccc;
-}
+
+/* Toggle colors when unselected row */
 .toggle-switch.on {
     background-color: #fff;
 }
-.menu-item.selected .toggle-switch.on {
+.toggle-switch.on::after {
+    transform: translateX(16px);
     background-color: #000;
 }
-.toggle-switch.on::after {
-    left: 18px;
+
+/* Toggle colors when SELECTED row (black background toggle on white selection box) */
+.menu-item.selected .toggle-switch {
+    background-color: #aaa;
+}
+.menu-item.selected .toggle-switch::after {
+    background-color: #444;
+}
+.menu-item.selected .toggle-switch.on {
     background-color: #000;
 }
 .menu-item.selected .toggle-switch.on::after {
     background-color: #fff;
 }
 
+/* Separator */
+.menu-separator {
+    justify-content: center;
+    color: #555 !important;
+    font-size: 12px;
+    font-weight: 700;
+}
+.menu-item.selected.menu-separator {
+    color: #555 !important; /* Separator never turns black */
+}
+
 .footer {
     background-color: #000;
-    padding: 10px 15px;
+    padding: 12px 15px;
     display: flex;
     justify-content: space-between;
     font-size: 12px;
-    color: #aaa;
-    border-top: 1px solid #222;
+    color: #888;
+    border-top: 1px solid #1a1a1a;
+    font-weight: 600;
 }
