@@ -124,7 +124,7 @@ body {
     font-family: 'Pirata One', cursive;
     color: #fff;
     -webkit-text-stroke: 1px rgba(0, 0, 0, 0.9);
-    filter: drop-shadow(0 5px 15px rgba(0,0,0,1)) drop-shadow(0 0 10px rgba(255,255,255,0.3));
+    filter: drop-shadow(0 5px 15px rgba(0,0,0,1)) drop-shadow(0 0 20px rgba(255,255,255,0.8)); /* Stronger white glow */
     letter-spacing: 3px;
     z-index: 2;
     pointer-events: none;
@@ -187,7 +187,8 @@ body {
     left: 0;
     right: 0;
     height: 40px;
-    background-color: rgba(220, 230, 240, 0.95); /* Slightly cool white */
+    background-color: #fff; /* Pure white */
+    box-shadow: 0 0 15px rgba(255, 255, 255, 0.6), 0 0 5px rgba(255, 255, 255, 0.8); /* Intense white glow */
     transition: transform 0.12s cubic-bezier(0.2, 0.8, 0.2, 1); /* 60fps Smooth glide! */
     z-index: 1;
     opacity: 0;
