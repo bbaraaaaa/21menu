@@ -120,8 +120,9 @@ body {
     top: 50%;
     left: 50%;
     transform: translate(-50%, -50%);
-    width: auto;
-    height: 85px; /* Match the exact size of the previous text */
+    width: auto !important;
+    height: 85px !important; /* Match the exact size of the previous text */
+    object-fit: contain !important;
     z-index: 2;
     pointer-events: none;
 }
