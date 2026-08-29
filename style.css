@@ -162,16 +162,18 @@ body {
     cursor: pointer;
 }
 .tab.active {
-    color: #fff;
+    color: #ffffff;
+    text-shadow: 0 0 8px rgba(255, 255, 255, 0.8), 0 0 4px rgba(255, 255, 255, 0.6); /* Text glow for selected tab */
 }
 .tab.active::after {
     content: '';
     position: absolute;
     bottom: -1px;
     left: 15%;
-    width: 70%;
+    right: 15%;
     height: 2px;
-    background-color: #fff;
+    background-color: #ffffff;
+    box-shadow: 0 -2px 8px rgba(255, 255, 255, 0.8), 0 0 4px rgba(255, 255, 255, 0.9); /* Line glow */
     border-radius: 2px;
 }
 
