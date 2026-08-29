@@ -91,15 +91,16 @@ body {
     top: 50px;
     left: 50px; /* JS overrides this */
     width: 400px;
-    background-color: rgba(5, 5, 5, 0.85); /* Slightly transparent for blur */
-    backdrop-filter: blur(12px);
-    -webkit-backdrop-filter: blur(12px);
+    background-color: rgba(5, 5, 5, 0.45); /* More transparent for strong glass effect */
+    backdrop-filter: blur(16px);
+    -webkit-backdrop-filter: blur(16px);
     border-radius: 8px; /* ARYA style has slight rounding */
     overflow: hidden;
     box-shadow: 0 20px 60px rgba(0,0,0,0.9), 0 0 10px rgba(255,255,255,0.03);
-    border: 1px solid rgba(255,255,255,0.08);
+    border: 1px solid rgba(255,255,255,0.1);
     display: flex;
     flex-direction: column;
+    will-change: transform, opacity;
 }
 
 .banner {
@@ -115,7 +116,7 @@ body {
 }
 
 .header {
-    background-color: rgba(0, 0, 0, 0.5);
+    background-color: rgba(0, 0, 0, 0.2);
     padding: 12px;
     text-align: center;
     border-bottom: 1px solid rgba(255,255,255,0.05);
@@ -130,7 +131,7 @@ body {
 /* Horizontal Tabs (ARYA style) */
 .tabs-container {
     display: flex;
-    background-color: rgba(15, 15, 15, 0.7);
+    background-color: rgba(0, 0, 0, 0.2);
     border-bottom: 1px solid rgba(255,255,255,0.05);
     padding: 0 2px;
 }
@@ -162,7 +163,7 @@ body {
 /* List Wrapper for Smooth Selection */
 .list-wrapper {
     position: relative;
-    background-color: rgba(0, 0, 0, 0.4);
+    background-color: transparent; /* Fully transparent to let container glass show */
     min-height: 400px; /* Dynamic via JS but good default */
 }
 
@@ -171,10 +172,11 @@ body {
     left: 0;
     right: 0;
     height: 40px;
-    background-color: #fff;
-    transition: transform 0.15s cubic-bezier(0.2, 0.8, 0.2, 1); /* Smooth glide! */
+    background-color: rgba(255, 255, 255, 0.9);
+    transition: transform 0.12s cubic-bezier(0.2, 0.8, 0.2, 1); /* 60fps Smooth glide! */
     z-index: 1;
     opacity: 0;
+    will-change: transform; /* Force hardware acceleration */
 }
 .selection-box.active {
     opacity: 1;
@@ -276,7 +278,7 @@ body {
 }
 
 .footer {
-    background-color: rgba(0, 0, 0, 0.7);
+    background-color: rgba(0, 0, 0, 0.3);
     padding: 12px 15px;
     display: flex;
     justify-content: space-between;
