@@ -91,7 +91,7 @@ body {
     top: 50px;
     left: 50px; /* JS overrides this */
     width: 400px;
-    background-color: rgba(5, 5, 5, 0.45); /* More transparent for strong glass effect */
+    background-color: rgba(5, 5, 5, 0.95); /* 95% opacity as requested */
     backdrop-filter: blur(16px);
     -webkit-backdrop-filter: blur(16px);
     border-radius: 8px; /* ARYA style has slight rounding */
@@ -116,7 +116,7 @@ body {
 }
 
 .header {
-    background-color: rgba(0, 0, 0, 0.2);
+    background-color: rgba(0, 0, 0, 0.9);
     padding: 12px;
     text-align: center;
     border-bottom: 1px solid rgba(255,255,255,0.05);
@@ -131,7 +131,7 @@ body {
 /* Horizontal Tabs (ARYA style) */
 .tabs-container {
     display: flex;
-    background-color: rgba(0, 0, 0, 0.2);
+    background-color: rgba(0, 0, 0, 0.85);
     border-bottom: 1px solid rgba(255,255,255,0.05);
     padding: 0 2px;
 }
@@ -163,7 +163,7 @@ body {
 /* List Wrapper for Smooth Selection */
 .list-wrapper {
     position: relative;
-    background-color: transparent; /* Fully transparent to let container glass show */
+    background-color: rgba(0, 0, 0, 0.9);
     min-height: 400px; /* Dynamic via JS but good default */
 }
 
@@ -278,7 +278,7 @@ body {
 }
 
 .footer {
-    background-color: rgba(0, 0, 0, 0.3);
+    background-color: rgba(0, 0, 0, 0.95);
     padding: 12px 15px;
     display: flex;
     justify-content: space-between;
