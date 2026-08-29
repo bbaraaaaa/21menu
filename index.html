@@ -1,126 +1,50 @@
 <!DOCTYPE html>
 <html lang="en">
-
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>21 Savage</title>
+    <title>21 SAVAGE MENU</title>
     <link rel="stylesheet" href="style.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <link href="https://fonts.googleapis.com/css2?family=Metal+Mania&family=Inter:wght@400;500;600;700&display=swap"
-        rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
 </head>
-
 <body>
-
-    <!-- Toast Notifications -->
-    <div id="toast-container"></div>
-
-    <!-- ================= LOADER / LOGIN SCREEN ================= -->
-    <div id="login-screen" class="screen active">
-        <div class="login-panel glass-panel">
-            <h1 class="logo-text gothic-text">21 Savage</h1>
-
-            <div class="auth-tabs">
-                <div class="auth-tab active" id="tab-login">Login</div>
-                <div class="auth-tab" id="tab-register">Register</div>
+    
+    <!-- Keybind Popup Overlay -->
+    <div id="keybind-overlay" style="display: flex;">
+        <div class="keybind-box">
+            <div class="keybind-header">
+                <img src="https://i.imgur.com/3q1jO7F.png" alt="icon">
+                <span>callmeanger</span>
             </div>
-
-            <div class="input-group">
-                <i class="fa-solid fa-user"></i>
-                <input type="text" id="username" placeholder="Username">
-            </div>
-
-            <div class="input-group">
-                <i class="fa-solid fa-key"></i>
-                <input type="password" id="password" placeholder="Password">
-            </div>
-
-            <div class="input-group" id="license-wrap" style="display: none;">
-                <i class="fa-solid fa-fingerprint"></i>
-                <input type="text" id="license-input" placeholder="License Key">
-            </div>
-
-            <button id="auth-btn" class="primary-btn">LOGIN</button>
-            <p id="auth-msg" class="error-text hidden"></p>
+            <p class="keybind-title">Menu bind</p>
+            <p class="keybind-instruction" id="keybind-inst">Enter Menu Open Key ...</p>
+            <div class="keybind-btn" id="keybind-btn">Waiting for input...</div>
         </div>
     </div>
 
-    <!-- ================= MAIN EXECUTOR (Arya Style) ================= -->
-    <div id="main-executor" class="screen hidden">
-        <!-- Sidebar -->
-        <div class="sidebar">
-            <div class="sidebar-logo">
-                <h1 class="gothic-text" style="font-size: 32px; color: #fff;">21</h1>
-            </div>
-
-            <div class="nav-items">
-                <div class="nav-item" title="Terminal"><i class="fa-solid fa-terminal"></i></div>
-                <div class="nav-item" title="Files"><i class="fa-solid fa-folder"></i></div>
-                <div class="nav-item active" title="Products"><i class="fa-solid fa-border-all"></i></div>
-                <div class="nav-item" title="Settings"><i class="fa-solid fa-gear"></i></div>
-            </div>
-
-            <div class="sidebar-bottom">
-                <div class="nav-item logout-btn" title="Logout"><i class="fa-solid fa-arrow-right-from-bracket"></i>
-                </div>
-            </div>
+    <!-- Main Menu UI -->
+    <div id="menu-container" style="display: none;">
+        <div class="banner">
+            <img src="banner.jpg" alt="21 SAVAGE" onerror="this.src='https://i.imgur.com/c6Oqz7P.png'">
+        </div>
+        <div class="header">
+            <h2>MAIN MENU</h2>
+        </div>
+        <div class="sub-header" id="sub-header-title">
+            Main menu
+        </div>
+        
+        <div class="items-list" id="items-list">
+            <!-- Items injected by JS -->
         </div>
 
-        <!-- Main Content -->
-        <div class="main-content">
-            <div class="content-header" style="-webkit-app-region: drag;">
-                <h3>21 Savage <span style="color: #666; margin: 0 5px;">></span> <span
-                        style="color: #fff;">Products</span></h3>
-                <div class="header-actions" style="-webkit-app-region: no-drag;">
-                    <i class="fa-solid fa-minus min-btn"></i>
-                    <i class="fa-solid fa-xmark close-btn"></i>
-                </div>
-            </div>
-
-            <div class="product-container">
-                <div class="product-card">
-                    <div class="product-icon gothic-text">21</div>
-                    <div class="product-info">
-                        <h4>21 Savage Menu</h4>
-                        <p>Expiration: <span class="white-text" id="user-expiry">Lifetime</span></p>
-                        <p>Status: <span class="white-text">Working</span></p>
-                    </div>
-                    <button class="inject-btn" id="start-inject-btn" title="Inject">
-                        <i class="fa-solid fa-download"></i>
-                    </button>
-                </div>
-            </div>
-        </div>
-    </div>
-
-    <!-- ================= BOTTOM RIGHT LOADER OVERLAY ================= -->
-    <div id="arya-loader" class="loader-overlay hidden">
-        <div class="loader-content">
-            <div class="loader-top">
-                <div class="loader-info">
-                    <h4>21 Savage Menu</h4>
-                    <p>Server Name: <span class="white-text">Waiting for connection...</span></p>
-                    <p>Players: <span class="white-text">-</span></p>
-                    <p>Anti Cheat: <span class="white-text">Scanning...</span></p>
-                </div>
-                <div class="loader-thumbnail">
-                    <img src="banner.jpg" alt="Server">
-                </div>
-            </div>
-            <div class="loader-bottom">
-                <div style="display:flex; justify-content:space-between; margin-bottom: 5px;">
-                    <p id="loading-status">Loading theme and logo...</p>
-                    <span id="progress-text" class="progress-text">0%</span>
-                </div>
-                <div class="progress-bar-bg">
-                    <div class="progress-bar-fill" id="progress-bar"></div>
-                </div>
-            </div>
+        <div class="footer">
+            <span>21 | discord.gg/0e | [F7] Bind</span>
+            <span id="pagination">1/8</span>
         </div>
     </div>
 
     <script src="script.js"></script>
 </body>
-
 </html>
