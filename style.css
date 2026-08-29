@@ -299,7 +299,8 @@ body {
     display: flex;
     justify-content: space-between;
     font-size: 12px;
-    color: #6a7c92;
+    color: #ffffff; /* Pure white text */
+    text-shadow: 0 0 8px rgba(255, 255, 255, 0.8), 0 0 3px rgba(255, 255, 255, 0.5); /* Glowing effect */
     border-top: 1px solid rgba(255,255,255,0.05);
     font-weight: 600;
 }
