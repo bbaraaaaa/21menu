@@ -36,13 +36,13 @@ window.addEventListener('message', function(event) {
         keybindOverlay.className = 'fade-hidden';
         menuContainer.className = 'fade-hidden';
     }
-    else if (data.action === "updateData") {
-        document.getElementById('category-title').innerText = data.category;
+    else if (data.action === "updateData" || data.action === "update") {
+        document.getElementById('category-title').innerText = data.category || "MAIN MENU";
         
-        // Ensure allTabs exists, fallback to single tab if not provided by lua
-        let allTabs = data.allTabs || [data.tab];
+        let allTabs = data.tabs || [];
+        let activeTabIdx = data.activeTab || 0;
         
-        if (allTabs && allTabs.length > 0) {
+        if (allTabs.length > 0) {
             let tabsHtml = "";
             let numTabs = allTabs.length;
             
@@ -50,7 +50,7 @@ window.addEventListener('message', function(event) {
                 tabsHtml = `<div class="tab active">${allTabs[0]}</div>`;
             } else {
                 for (let i = 0; i < numTabs; i++) {
-                    let isActive = (data.tab === allTabs[i]) ? "active" : "";
+                    let isActive = (i === activeTabIdx) ? "active" : "";
                     tabsHtml += `<div class="tab ${isActive}">${allTabs[i]}</div>`;
                 }
             }
