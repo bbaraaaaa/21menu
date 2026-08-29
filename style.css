@@ -87,8 +87,10 @@ body {
 
 /* Menu Container */
 #menu-container {
-    width: 100vw;
-    height: 100vh;
+    position: absolute;
+    top: 50px;
+    left: 50px; /* JS overrides this */
+    width: 400px;
     background-color: rgba(3, 5, 10, 0.93); /* Darker Midnight blue glass */
     backdrop-filter: blur(16px);
     -webkit-backdrop-filter: blur(16px);
@@ -176,7 +178,7 @@ body {
 .list-wrapper {
     position: relative;
     background-color: rgba(3, 5, 10, 0.93);
-    flex: 1; /* Take remaining space */
+    /* Removed min-height so it shrinks to fit the items */
     transition: height 0.2s ease;
 }
 
