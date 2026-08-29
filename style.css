@@ -121,7 +121,7 @@ body {
     left: 50%;
     transform: translate(-50%, -50%);
     width: auto !important;
-    height: 85px !important; /* Match the exact size of the previous text */
+    height: 105px !important; /* Slightly larger for better fit */
     object-fit: contain !important;
     z-index: 2;
     pointer-events: none;
