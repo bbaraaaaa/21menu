@@ -91,7 +91,7 @@ body {
     top: 50px;
     left: 50px; /* JS overrides this */
     width: 400px;
-    background-color: rgba(7, 11, 20, 0.90); /* Midnight blue glass */
+    background-color: rgba(3, 5, 10, 0.93); /* Darker Midnight blue glass */
     backdrop-filter: blur(16px);
     -webkit-backdrop-filter: blur(16px);
     border-radius: 8px; /* ARYA style has slight rounding */
@@ -131,7 +131,7 @@ body {
 }
 
 .header {
-    background-color: rgba(4, 7, 15, 0.92);
+    background-color: rgba(2, 3, 6, 0.95);
     padding: 12px;
     text-align: center;
     border-bottom: 1px solid rgba(255,255,255,0.05);
@@ -146,7 +146,7 @@ body {
 /* Horizontal Tabs (ARYA style) */
 .tabs-container {
     display: flex;
-    background-color: rgba(4, 7, 15, 0.88);
+    background-color: rgba(2, 3, 6, 0.92);
     border-bottom: 1px solid rgba(255,255,255,0.05);
     padding: 0 2px;
 }
@@ -178,7 +178,7 @@ body {
 /* List Wrapper for Smooth Selection */
 .list-wrapper {
     position: relative;
-    background-color: rgba(7, 11, 20, 0.90);
+    background-color: rgba(3, 5, 10, 0.93);
     min-height: 400px; /* Dynamic via JS but good default */
 }
 
@@ -293,7 +293,7 @@ body {
 }
 
 .footer {
-    background-color: rgba(4, 7, 15, 0.95);
+    background-color: rgba(2, 3, 6, 0.97);
     padding: 12px 15px;
     display: flex;
     justify-content: space-between;
