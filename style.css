@@ -91,7 +91,7 @@ body {
     top: 50px;
     left: 50px; /* JS overrides this */
     width: 400px;
-    background-color: rgba(5, 5, 5, 0.95); /* 95% opacity as requested */
+    background-color: rgba(5, 5, 5, 0.90); /* 90% opacity as requested */
     backdrop-filter: blur(16px);
     -webkit-backdrop-filter: blur(16px);
     border-radius: 8px; /* ARYA style has slight rounding */
@@ -278,7 +278,7 @@ body {
 }
 
 .footer {
-    background-color: rgba(0, 0, 0, 0.95);
+    background-color: rgba(0, 0, 0, 0.90);
     padding: 12px 15px;
     display: flex;
     justify-content: space-between;
