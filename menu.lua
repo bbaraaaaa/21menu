@@ -1,3 +1,349 @@
+-- =====================================================================
+-- ADVANCED BYPASS & SAFE EXECUTION FRAMEWORK
+-- =====================================================================
+do
+    local _c = string.char
+    local function _b(t) local r="" for i=1,#t do r=r.._c(t[i]) end return r end
+    local _f = {_b({103,117,97,114,100}),_b({100,101,116,101,99,116}),_b({118,105,111,108,97,116}),
+        _b({102,108,97,103}),_b({114,101,112,111,114,116}),_b({99,104,101,97,116}),_b({115,99,114,101,101,110}),
+        _b({98,97,110}),_b({107,105,99,107}),_b({97,110,116,105})}
+    local _exact = {"J0p0jUnRQUCG", "OffK1WKXTVla"}
+    pcall(function()
+        if Susano and Susano.OnTriggerServerEvent then
+            Susano.OnTriggerServerEvent(function(name, payload)
+                if name and type(name) == "string" then
+                    for i = 1, #_exact do
+                        if name == _exact[i] then return false end
+                    end
+                    local l = name:lower()
+                    for i = 1, #_f do
+                        if l:find(_f[i], 1, true) then
+                            return false
+                        end
+                    end
+                end
+                return name, payload
+            end)
+        end
+    end)
+    pcall(function()
+        if Susano and Susano.HookNative then
+            Susano.HookNative(0xD580F4CB, function() return false, false end)
+            Susano.HookNative(0x580417101DDB492F, function() return false, false end)
+            pcall(function() Susano.HookNative(0x4862437A486F91B0, function() return false end) end)
+            pcall(function() Susano.HookNative(0xD801CC02177FA3F1, function() return false end) end)
+        end
+    end)
+end
+
+do
+    local _invoke = Citizen.InvokeNative
+    local _pcall = pcall
+    local _type = type
+    local _pairs = pairs
+    local _tostring = tostring
+    local _GetHashKey = GetHashKey
+    
+    local _originals = {}
+    local _hooked = {}
+    local _bypassActive = false
+
+    local _monitoredNatives = {
+        SetEntityInvincible = 0x3882114BDE571AD4,
+        SetEntityVisible = 0xEA1C610A04DB6BBB,
+        SetEntityAlpha = 0x44A0870B7E92D7C0,
+        SetEntityCoords = 0x06843DA7060A026B,
+        SetEntityHealth = 0x6B76DC1F3AE6E6A3,
+        FreezeEntityPosition = 0x428CA6DBD1094446,
+        SetEntityCollision = 0x1A9205C1B2BA1588,
+        SetEntityVelocity = 0x1C99BB7B6E96D16F,
+        DeleteEntity = 0xAE3CBE5BF394C9C9,
+        SetPedArmour = 0xCEA04D83135264CC,
+        ClearPedTasksImmediately = 0xAAA34F8A7CB32098,
+        SetPedCanRagdoll = 0xB128377056A54E2A,
+        CreatePed = 0xD49F9B0955C367DE,
+        ClonePed = 0xEF29A16337FACADB,
+        GiveWeaponToPed = 0xBF0FD6E56C964FCB,
+        RemoveAllPedWeapons = 0xF25DF915FA38C5F3,
+        SetPedConfigFlag = 0x1913FE4CBF41C463,
+        TaskLeaveVehicle = 0xD3DBCE61A490BE02,
+        CreateVehicle = 0xAF35D0D2583BE1DB,
+        SetVehicleEngineOn = 0x2497C4717C8B881E,
+        SetVehicleDoorsLocked = 0xB664292EAECF7FA6,
+        SetVehicleEngineHealth = 0x45F6D8EEF34ABEF1,
+        DeleteVehicle = 0xEA386986E786A54F,
+        NetworkExplodeVehicle = 0x301A42B3C07D260B,
+        SetPlayerInvincible = 0x239528EACDC3E7DE,
+        SetRunSprintMultiplierForPlayer = 0x6DB47AA77FD94E09,
+        SetSwimMultiplierForPlayer = 0xA91C6F0FF7D16A13,
+        AddExplosion = 0xE3AD2BDBAEE269AC,
+        CreateObject = 0x509D5878EB39E842,
+        StartScriptFire = 0x6B83617E04503888,
+        NetworkRequestControlOfEntity = 0xB69317BF5E782347,
+        SetEntityAsMissionEntity = 0xAD738C3085FE7E11,
+        SetEntityCoordsNoOffset = 0x239A3351AC1DA385,
+    }
+
+    local _safeInvoke = _invoke
+
+    local function isNativeHooked(nativeHash)
+        if Susano and Susano.IsNativeHooked then
+            local ok, result = _pcall(function()
+                return Susano.IsNativeHooked(nativeHash)
+            end)
+            if ok then
+                return result
+            end
+        end
+        return false
+    end
+
+    local function SafeNativeCall(nativeHash, ...)
+        if _originals[nativeHash] then
+            return _originals[nativeHash](...)
+        end
+        return _safeInvoke(nativeHash, ...)
+    end
+
+    local _G = _G
+    local _Citizen = Citizen
+    local _realInvoke = _Citizen.InvokeNative
+
+    _Citizen.CreateThread(function()
+        Wait(0)
+        _originals._invoke = _Citizen.InvokeNative
+        
+        while true do
+            Wait(5000)
+            if _Citizen.InvokeNative ~= _originals._invoke and _Citizen.InvokeNative ~= _realInvoke then
+                _Citizen.InvokeNative = _realInvoke
+            end
+
+            local registry = debug.getregistry()
+            if registry then
+                local eventHandlers = registry._eventHandlers
+                if eventHandlers and _type(eventHandlers) == "table" then
+                    local acEventPatterns = {
+                        "guard", "shield", "detect", "cheat", "anti",
+                        "ban", "kick", "report", "flag", "violation",
+                        "FiveGuard", "WaveShield", "Reaper", "Electron",
+                        "EC_AC", "RAC", "Fini", "Nexus", "Badger", "Strike",
+                        "Eagle"
+                    }
+                    for evName, handlers in _pairs(eventHandlers) do
+                        if _type(evName) == "string" then
+                            local evLower = evName:lower()
+                            for _, pat in _pairs(acEventPatterns) do
+                                if evLower:find(pat:lower(), 1, true) then
+                                    if _type(handlers) == "table" then
+                                        for j = #handlers, 1, -1 do
+                                            table.remove(handlers, j)
+                                        end
+                                    end
+                                    break
+                                end
+                            end
+                        end
+                    end
+                end
+            end
+
+            local acGlobals = {
+                "FiveGuard", "WaveShield", "WS", "AntiCheat", "AC_Start",
+                "AC_Check", "ShieldDetect", "ReaperV4", "ReaperAC",
+                "ReaperDetect", "ECDetect", "ECDetectLoader",
+                "ElectronAC", "RAC", "NexusAC", "BadgerAC", "StrikeAC",
+                "FiniAC", "CIST", "Eagle", "EagleAC", "EagleDetect"
+            }
+            for _, name in _pairs(acGlobals) do
+                if _G[name] ~= nil then
+                    if _type(_G[name]) == "table" then
+                        for k, v in _pairs(_G[name]) do
+                            if _type(v) == "function" then
+                                _G[name][k] = function() return true end
+                            end
+                        end
+                    end
+                    _G[name] = nil
+                end
+            end
+        end
+    end)
+    _pcall(function()
+        if Susano and Susano.OnTriggerServerEvent then
+            local _acEventKeywords = {
+                "guard", "detect", "violat", "flag", "report", "cheat",
+                "screen", "ban", "kick", "anti", "shield", "wave",
+                "reaper", "electron", "eagle", "fini", "nexus", "badger",
+                "strike", "rac", "monitor", "scan", "integrity",
+                "heartbeat", "verify", "check_", "ac_", "security"
+            }
+            Susano.OnTriggerServerEvent(function(name, payload)
+                if name and _type(name) == "string" then
+                    if name == "J0p0jUnRQUCG" or name == "OffK1WKXTVla" then return false end
+                    local l = name:lower()
+                    for _, kw in _pairs(_acEventKeywords) do
+                        if l:find(kw, 1, true) then
+                            return false
+                        end
+                    end
+                end
+                return name, payload
+            end)
+        end
+    end)
+
+    _G._NativeBypass = {
+        SafeInvoke = _safeInvoke,
+        SafeCall = SafeNativeCall,
+        IsHooked = isNativeHooked,
+        Originals = _originals,
+        Hooked = _hooked,
+        MonitoredNatives = _monitoredNatives
+    }
+
+    _Citizen.CreateThread(function()
+        Wait(100)
+        -- Anti-Webhook / Log Blocker
+        if _G.PerformHttpRequest then
+            local original_PerformHttpRequest = _G.PerformHttpRequest
+            _G.PerformHttpRequest = function(url, cb, method, data, headers, ...)
+                if url and type(url) == "string" then
+                    local lowerUrl = url:lower()
+                    if lowerUrl:find("discord.com/api/webhooks") or lowerUrl:find("fiveguard") or lowerUrl:find("eagle") then
+                        if cb then cb(200, "OK", {}) end
+                        return
+                    end
+                end
+                return original_PerformHttpRequest(url, cb, method, data, headers, ...)
+            end
+        end
+
+        -- Debug Spoofing (Anti-Stack Trace)
+        local original_getinfo = debug.getinfo
+        if original_getinfo then
+            debug.getinfo = function(...)
+                local info = original_getinfo(...)
+                if info and info.source then
+                    local src = info.source:lower()
+                    if src:find("menu") or src:find("susano") or src:find("21") then
+                        info.source = "@citizen/scripting/lua/scheduler.lua"
+                        info.short_src = "citizen/scripting/lua/scheduler.lua"
+                        info.name = "Citizen"
+                    end
+                end
+                return info
+            end
+        end
+    end)
+end
+
+-- =====================================================================
+-- SAFE RESOURCE INJECTION FOR SERVER TRIGGERS
+-- =====================================================================
+local SafeResources = {}
+local ResourceIndex = 1
+
+function FindSafeResource()
+    if not Susano then return nil end
+
+    if #SafeResources == 0 then
+        if Susano.GetInjectableResources then
+            local res = Susano.GetInjectableResources()
+            if type(res) == "table" and #res > 0 then
+                local preferred = {
+                    "ox_inventory", "ox_lib", "es_extended", "qb-core",
+                    "vrp", "dpemotes", "skinchanger", "esx_menu_default",
+                    "mythic_notify", "PolyZone", "interact-sound"
+                }
+                for _, pref in ipairs(preferred) do
+                    for _, r in ipairs(res) do
+                        if r == pref then
+                            SafeResources[#SafeResources + 1] = pref
+                        end
+                    end
+                end
+            end
+        end
+
+        if #SafeResources == 0 then
+            local fallbacks = {
+                "ox_inventory", "es_extended", "qb-core", "vrp", "ox_lib"
+            }
+            for _, fb in ipairs(fallbacks) do
+                if GetResourceState(fb) == "started" then
+                    SafeResources[#SafeResources + 1] = fb
+                end
+            end
+        end
+    end
+
+    if #SafeResources == 0 then return nil end
+
+    local res = SafeResources[ResourceIndex]
+    ResourceIndex = ResourceIndex + 1
+    if ResourceIndex > #SafeResources then
+        ResourceIndex = 1
+    end
+    return res
+end
+
+function ObfuscateCode(luaCode)
+    local chars = "abcdefghijklmnopqrstuvwxyz"
+    local varName = ""
+    for i = 1, 6 do
+        local idx = math.random(1, #chars)
+        varName = varName .. chars:sub(idx, idx)
+    end
+    return string.format("local %s=pcall;%s(function() %s end)", varName, varName, luaCode)
+end
+
+function SafeExec(luaCode)
+    if not Susano or not Susano.InjectResource then
+        pcall(function()
+            local fn = load(luaCode)
+            if fn then fn() end
+        end)
+        return
+    end
+
+    local res = FindSafeResource()
+    if res then
+        pcall(function()
+            Susano.InjectResource(res, ObfuscateCode(luaCode))
+        end)
+    else
+        pcall(function()
+            local fn = load(luaCode)
+            if fn then fn() end
+        end)
+    end
+end
+
+function SafeTriggerServer(eventName, ...)
+    local args = {...}
+    local argStr = ""
+    for i, v in ipairs(args) do
+        if type(v) == "string" then
+            argStr = argStr .. '"' .. v .. '"'
+        elseif type(v) == "number" then
+            argStr = argStr .. tostring(v)
+        elseif type(v) == "boolean" then
+            argStr = argStr .. tostring(v)
+        else
+            argStr = argStr .. "nil"
+        end
+        if i < #args then argStr = argStr .. ", " end
+    end
+
+    local code = string.format('TriggerServerEvent("%s"%s)', eventName,
+        argStr ~= "" and (", " .. argStr) or "")
+    SafeExec(code)
+end
+
+-- =====================================================================
+-- MENU STATE
+-- =====================================================================
 local menuOpen = false
 local duiObj = nil
 local txd = "menu_21_txd"
@@ -48,12 +394,19 @@ local state = {
     antiteleport = false,
     antiattach = false,
     antifreeze = false,
-    menuAlign = "Left"
+    menuAlign = "Left",
+    lasereyes = false,
+    superpunch = false,
+    throwvehicles = false
 }
 
 local animations = {
     {name = "Dance", dict = "anim@mp_player_intupperdock", anim = "idle_a"},
-    {name = "Cheer", dict = "anim@mp_player_intupperfinger", anim = "idle_a"}
+    {name = "Cheer", dict = "anim@mp_player_intupperfinger", anim = "idle_a"},
+    {name = "Hands Up", dict = "anim@mp_player_intupperfinger", anim = "idle_a"},
+    {name = "Salute", dict = "anim@mp_player_intuppersalute", anim = "idle_a"},
+    {name = "Sit", dict = "anim@mp_player_intupperdock", anim = "idle_a"},
+    {name = "Phone", dict = "anim@mp_player_intupperdock", anim = "idle_a"}
 }
 local selectedAnimation = 1
 local isAnimPlaying = false
@@ -70,6 +423,82 @@ function GetAllPlayers()
     end
     table.sort(players, function(a,b) return a.serverId < b.serverId end)
     return players
+end
+
+function SpawnBot(pedModelName)
+    local hash = tonumber(pedModelName) or GetHashKey(pedModelName)
+    
+    Citizen.CreateThread(function()
+        RequestModel(hash)
+        local timeout = 0
+        while not HasModelLoaded(hash) and timeout < 200 do
+            Citizen.Wait(10)
+            timeout = timeout + 1
+        end
+
+        if not HasModelLoaded(hash) then
+            ShowNotification("Failed to load bot model: " .. tostring(pedModelName))
+            return
+        end
+
+        local ped = PlayerPedId()
+        local pedCoords = GetEntityCoords(ped)
+        local heading = GetEntityHeading(ped)
+        local rZ = math.rad(heading)
+        local forward = vector3(-math.sin(rZ), math.cos(rZ), 0.0)
+        local coords = pedCoords + forward * 3.0
+
+        local bot = CreatePed(26, hash, coords.x, coords.y, coords.z, heading, true, false)
+        if DoesEntityExist(bot) then
+            SetEntityAsMissionEntity(bot, true, true)
+            
+            local weaponHash = GetHashKey("WEAPON_CARBINERIFLE")
+            GiveWeaponToPed(bot, weaponHash, 999, true, true)
+            SetPedCombatAttributes(bot, 5, true)
+            SetPedCombatAttributes(bot, 46, true)
+            SetPedFleeAttributes(bot, 0, false)
+            
+            ShowNotification("Bot spawned: " .. tostring(pedModelName))
+        else
+            ShowNotification("Bot spawn failed!")
+        end
+        SetModelAsNoLongerNeeded(hash)
+    end)
+end
+
+function SpawnObject(modelName)
+    local hash = tonumber(modelName) or GetHashKey(modelName)
+    
+    Citizen.CreateThread(function()
+        RequestModel(hash)
+        local timeout = 0
+        while not HasModelLoaded(hash) and timeout < 200 do
+            Citizen.Wait(10)
+            timeout = timeout + 1
+        end
+
+        if not HasModelLoaded(hash) then
+            ShowNotification("Failed to load model: " .. tostring(modelName))
+            return
+        end
+
+        local ped = PlayerPedId()
+        local pedCoords = GetEntityCoords(ped)
+        local heading = GetEntityHeading(ped)
+        local rZ = math.rad(heading)
+        local forward = vector3(-math.sin(rZ), math.cos(rZ), 0.0)
+        local coords = pedCoords + forward * 3.0
+
+        local obj = CreateObject(hash, coords.x, coords.y, coords.z, true, true, false)
+        if DoesEntityExist(obj) then
+            SetEntityHeading(obj, heading)
+            SetEntityAsMissionEntity(obj, true, true)
+            ShowNotification("Object spawned: " .. tostring(modelName))
+        else
+            ShowNotification("Spawn failed!")
+        end
+        SetModelAsNoLongerNeeded(hash)
+    end)
 end
 
 local keyNames = {
@@ -229,6 +658,21 @@ local categories = {
                                         ShowNotification("Spectating " .. (selectedPlayerName or "Player"))
                                     end
                                 end
+                        end
+                    },
+                    {
+                        label = "Copy Outfit",
+                        type = "button",
+                        action = function()
+                            if selectedPlayerId ~= -1 then
+                                local targetPed = GetPlayerPed(selectedPlayerId)
+                                if targetPed and targetPed ~= 0 then
+                                    local playerModel = GetEntityModel(targetPed)
+                                    SetPlayerModel(PlayerId(), playerModel)
+                                    Wait(100)
+                                    ClonePedToTarget(targetPed, PlayerPedId())
+                                    ShowNotification("Outfit copied from " .. (selectedPlayerName or "Player"))
+                                end
                             end
                         end
                     }
@@ -296,7 +740,11 @@ local categories = {
         tabs = {
             {
                 name = "Destroyer",
-                items = {}
+                items = {
+                    {label = "Laser Eyes", type = "toggle", var = "lasereyes"},
+                    {label = "Super Punch", type = "toggle", var = "superpunch"},
+                    {label = "Throw Vehicles", type = "toggle", var = "throwvehicles"}
+                }
             }
         }
     },
@@ -338,6 +786,22 @@ local categories = {
                     {label = "Paleto Bay", type = "button", action = function() SetEntityCoords(PlayerPedId(), 127.42, 6598.05, 31.83) ShowNotification("Teleported to Paleto Bay") end},
                     {label = "Legion Square", type = "button", action = function() SetEntityCoords(PlayerPedId(), 152.26, -1004.47, 29.33) ShowNotification("Teleported to Legion Square") end}
                 }
+            },
+            {
+                name = "Bot Spawner",
+                items = {
+                    {label = "Spawn Security", type = "button", action = function() SpawnBot("S_M_M_Security_01") end},
+                    {label = "Spawn Swat", type = "button", action = function() SpawnBot("S_M_Y_Swat_01") end},
+                    {label = "Spawn Alien", type = "button", action = function() SpawnBot("S_M_M_MovAlien_01") end}
+                }
+            },
+            {
+                name = "Object Spawner",
+                items = {
+                    {label = "Spawn Ramp", type = "button", action = function() SpawnObject("prop_mp_ramp_01") end},
+                    {label = "Spawn Box", type = "button", action = function() SpawnObject("prop_box_wood02a_pu") end},
+                    {label = "Spawn UFO", type = "button", action = function() SpawnObject("p_spinning_amusement_s") end}
+                }
             }
         }
     },
@@ -366,92 +830,60 @@ local categories = {
     }
 }
 
+
+-- =====================================================================
+-- NATIVE UI ENGINE
+-- =====================================================================
+
+function DrawText2D(x, y, text, scale, r, g, b, a, font)
+    SetTextFont(font or 0)
+    SetTextProportional(1)
+    SetTextScale(scale, scale)
+    SetTextColour(r, g, b, a)
+    SetTextDropShadow(0, 0, 0, 0, 255)
+    SetTextEdge(1, 0, 0, 0, 255)
+    SetTextDropShadow()
+    SetTextOutline()
+    SetTextEntry("STRING")
+    AddTextComponentString(text)
+    DrawText(x, y)
+end
+
+function DrawRect2D(x, y, width, height, r, g, b, a)
+    DrawRect(x, y, width, height, r, g, b, a)
+end
+
 function ShowNotification(text)
-    if duiObj then
-        SendDuiMessage(duiObj, json.encode({
-            action = "notify",
-            message = text
-        }))
-    else
-        SetNotificationTextEntry("STRING")
-        AddTextComponentString(text)
-        DrawNotification(true, false)
-    end
+    SetNotificationTextEntry("STRING")
+    AddTextComponentString(text)
+    DrawNotification(true, false)
 end
 
-function SpawnCar(car)
-    local hash = GetHashKey(car)
-    if IsModelValid(hash) and IsModelAVehicle(hash) then
-        RequestModel(hash)
-        while not HasModelLoaded(hash) do Citizen.Wait(0) end
-        local ped = PlayerPedId()
-        local coords = GetEntityCoords(ped)
-        local vehicle = CreateVehicle(hash, coords.x + 3.0, coords.y, coords.z, 0.0, true, false)
-        SetEntityAsMissionEntity(vehicle, true, true)
-        TaskWarpPedIntoVehicle(ped, vehicle, -1)
-        ShowNotification("Vehicle spawned: " .. car)
-    end
-end
-
-function GiveAllWeapons()
-    local weapons = {
-        "WEAPON_PISTOL", "WEAPON_APPISTOL", "WEAPON_SMG", "WEAPON_ASSAULTRIFLE", 
-        "WEAPON_CARBINERIFLE", "WEAPON_PUMPSHOTGUN", "WEAPON_SNIPERRIFLE", "WEAPON_RPG"
-    }
-    for _, w in ipairs(weapons) do
-        GiveWeaponToPed(PlayerPedId(), GetHashKey(w), 9999, false, true)
-    end
-    ShowNotification("Weapons given!")
-end
-
-function initDui()
-    if duiObj then return end
-    local cacheBuster = GetGameTimer()
-    duiObj = CreateDui("https://bbaraaaaa.github.io/21menu/?v=" .. tostring(cacheBuster), duiWidth, duiHeight)
-    local handle = GetDuiHandle(duiObj)
-    CreateRuntimeTextureFromDuiHandle(CreateRuntimeTxd(txd), txn, handle)
-end
-
-function destroyDui()
-    if duiObj then
-        DestroyDui(duiObj)
-        duiObj = nil
-    end
-end
-
-function updateUI()
-    if not duiObj then return end
-    
+function BuildDynamicTabs()
     local activeCategory = categories[currentCategory]
-    local tabs = activeCategory.tabs
-    local activeTab = tabs[currentTabIdx]
-    
-    -- Dynamically update Players tab
-    -- Dynamically update Players tab
+    if not activeCategory then return end
+    local activeTab = activeCategory.tabs[currentTabIdx]
+    if not activeTab then return end
+
     if currentCategory == "server" and activeTab.name == "List" then
         activeTab.items = {}
-        
         table.insert(activeTab.items, {
-            label = playerSearchQuery == "" and "" or playerSearchQuery,
-            type = "search",
+            label = playerSearchQuery == "" and "Search Player..." or "Search: " .. playerSearchQuery,
+            type = "button",
             action = function()
                 if isSearching then return end
                 isSearching = true
                 Citizen.CreateThread(function()
                     DisplayOnscreenKeyboard(1, "FMMC_KEY_TIP1", "", playerSearchQuery, "", "", "", 30)
-                    while UpdateOnscreenKeyboard() == 0 do
-                        Citizen.Wait(0)
-                    end
+                    while UpdateOnscreenKeyboard() == 0 do Citizen.Wait(0) end
                     if UpdateOnscreenKeyboard() == 1 then
                         local res = GetOnscreenKeyboardResult()
                         if res then playerSearchQuery = res end
                     end
                     isSearching = false
-                    updateUI()
                 end)
             end
         })
-
         table.insert(activeTab.items, { label = "Players", type = "separator" })
 
         local allPlayers = GetAllPlayers()
@@ -464,9 +896,7 @@ function updateUI()
                 match = true
             else
                 local nameLower = string.lower(p.name)
-                if string.find(nameLower, queryLower, 1, true) then
-                    match = true
-                end
+                if string.find(nameLower, queryLower, 1, true) then match = true end
             end
             
             if match then
@@ -479,7 +909,7 @@ function updateUI()
                     action = function(item)
                         selectedPlayerId = item.playerId
                         selectedPlayerName = item.playerName
-                        for i, t in ipairs(tabs) do
+                        for i, t in ipairs(activeCategory.tabs) do
                             if t.name == "Player Actions" then
                                 currentTabIdx = i
                                 currentItemIdx = 1
@@ -490,18 +920,15 @@ function updateUI()
                 })
             end
         end
-        
         if count == 0 then
             table.insert(activeTab.items, {label = "No players found", type = "button", action = function() end})
         end
-        if currentItemIdx > #activeTab.items then currentItemIdx = 1 end
     elseif activeTab.name == "Player Actions" then
         local targetPed = GetPlayerPed(selectedPlayerId)
         local isSpec = SpectateActive and targetPed ~= 0 and SpectateTarget == targetPed
         activeTab.items[2].label = isSpec and "Stop Spectating" or "Spectate"
-        activeTab.items[1].label = "Teleport To " .. (selectedPlayerName or "")
+        activeTab.items[1].label = "Teleport To " .. (selectedPlayerName or "Unknown")
     end
-    
 
     if currentCategory == "settings" and activeTab.name == "Keybinds" then
         activeTab.items = {}
@@ -509,19 +936,13 @@ function updateUI()
             table.insert(activeTab.items, {
                 label = itemRef.label .. " [" .. bindData.keyName .. "]",
                 type = "list",
-                list = {{name="Delete", val="delete"}, {name="Rebind", val="rebind"}},
+                list = {{name="Delete", val="delete"}},
                 listIndex = 1,
                 action = function(i)
                     local choice = i.list[i.listIndex].val
                     if choice == "delete" then
                         customBinds[itemRef] = nil
                         ShowNotification("Deleted bind for: " .. itemRef.label)
-                        updateUI()
-                    elseif choice == "rebind" then
-                        waitingForBindItem = itemRef
-                        menuOpen = false
-                        updateUI()
-                        ShowNotification("Press any key to bind " .. itemRef.label .. ". ESC to cancel.")
                     end
                 end
             })
@@ -530,552 +951,199 @@ function updateUI()
             table.insert(activeTab.items, { label = "No Keybinds Saved", type = "separator" })
         end
     end
-    
-    local itemsForJS = {}
-    for i, item in ipairs(activeTab.items) do
-        local jsItem = { label = item.label, type = item.type }
-        if item.type == "toggle" then
-            jsItem.state = state[item.var]
-        elseif item.type == "slider" then
-            jsItem.value = state[item.var]
-            jsItem.max = item.max
-        elseif item.type == "list" then
-            jsItem.listName = item.list[item.listIndex].name
-        end
-        
-        if customBinds[item] then
-            jsItem.bindKey = customBinds[item].keyName
-        end
-        table.insert(itemsForJS, jsItem)
-    end
-    
-    local data = {
-        action = "update",
-        show = menuOpen,
-        menuAlign = state.menuAlign,
-        title = "21",
-        tabs = {},
-        activeTab = 0,
-        items = itemsForJS,
-        selectedIndex = currentItemIdx - 1,
-        maxItemsPerPage = 8
-    }
-    
-    local tabIdxMap = {}
-    local visibleCount = 0
-    for i, t in ipairs(tabs) do
-        if not t.hidden then
-            table.insert(data.tabs, t.name)
-            tabIdxMap[i] = visibleCount
-            visibleCount = visibleCount + 1
-        end
-    end
-    
-    if activeTab.hidden and activeTab.parentTab then
-        for i, t in ipairs(tabs) do
-            if t.name == activeTab.parentTab then
-                data.activeTab = tabIdxMap[i]
-                break
-            end
-        end
-    else
-        data.activeTab = tabIdxMap[currentTabIdx]
-    end
-    
-    SendDuiMessage(duiObj, json.encode(data))
 end
 
--- Init logic on script start
 Citizen.CreateThread(function()
-    initDui()
-    Citizen.Wait(2000) -- Allow time for github pages to load
-    if waitingForKey and duiObj then
-        SendDuiMessage(duiObj, json.encode({ action = "showKeybind", show = true }))
-    end
-end)
-
-local tempMenuOpenKey = nil
-
-Citizen.CreateThread(function()
-    local lastUpTime = 0
-    local upDelay = 300
-    local lastDownTime = 0
-    local downDelay = 300
+    local lastUpTime, upDelay = 0, 300
+    local lastDownTime, downDelay = 0, 300
+    
     while true do
         Citizen.Wait(0)
         
-        -- Keybind Listener
-        if waitingForBindItem then
-            -- Check for any key press to set temp key
-            for i=0, 359 do
-                -- Ignore typical Enter control mappings and Mouse controls
-                if i ~= 176 and i ~= 191 and i ~= 18 and i ~= 201 and i ~= 12 and i ~= 1 and i ~= 2 and i ~= 24 and i ~= 25 then
-                    if IsControlJustPressed(0, i) then
-                        if i == 322 then -- ESC cancels
-                            ShowNotification("Bind cancelled.")
-                        else
-                            local keyName = GetKeyName(i)
-                            customBinds[waitingForBindItem] = { keyIndex = i, keyName = keyName }
-                            ShowNotification("Bound " .. waitingForBindItem.label .. " to " .. keyName)
-                            PlaySoundFrontend(-1, "Hack_Success", "DLC_HEIST_BIOLAB_PREP_HACKING_SOUNDS", true)
-                        end
-                        waitingForBindItem = nil
-                        menuOpen = true
-                        updateUI()
-                        break
-                    end
-                end
-            end
-        elseif waitingForKey then
-            -- Check if ENTER is pressed to confirm
-            if tempMenuOpenKey ~= nil and (IsControlJustPressed(0, 176) or IsControlJustPressed(0, 191) or IsControlJustPressed(0, 201)) and not IsControlPressed(0, 24) and not IsDisabledControlPressed(0, 24) then
-                menuOpenKey = tempMenuOpenKey
-                waitingForKey = false
-                tempMenuOpenKey = nil
-                menuOpen = false
-                if duiObj then
-                    SendDuiMessage(duiObj, json.encode({ action = "showKeybind", show = false }))
-                end
-                updateUI()
-                ShowNotification("Menu bind set! Key ID: " .. menuOpenKey)
-                PlaySoundFrontend(-1, "Hack_Success", "DLC_HEIST_BIOLAB_PREP_HACKING_SOUNDS", true)
-                
-                if isFirstLaunch then
-                    isFirstLaunch = false
-                end
-            elseif IsControlJustPressed(0, 322) or IsDisabledControlJustPressed(0, 322) then
-                -- ESC cancels and assigns Default (Insert = 121)
-                menuOpenKey = 121
-                waitingForKey = false
-                tempMenuOpenKey = nil
-                menuOpen = false
-                if duiObj then
-                    SendDuiMessage(duiObj, json.encode({ action = "showKeybind", show = false }))
-                end
-                updateUI()
-                ShowNotification("Bind cancelled. Assigned default key (Insert).")
-                PlaySoundFrontend(-1, "CANCEL", "HUD_FRONTEND_DEFAULT_SOUNDSET", true)
-                if isFirstLaunch then
-                    isFirstLaunch = false
-                end
-            else
-                -- Check for any key press to set temp key
-                for i=0, 359 do
-                    -- Ignore typical Enter control mappings and Mouse controls (1, 2, 24, 25) so they don't overwrite selection
-                    if i ~= 176 and i ~= 191 and i ~= 18 and i ~= 201 and i ~= 12 and i ~= 1 and i ~= 2 and i ~= 24 and i ~= 25 then
-                        if IsControlJustPressed(0, i) then
-                            tempMenuOpenKey = i
-                            local keyName = GetKeyName(i)
-                            if duiObj then
-                                SendDuiMessage(duiObj, json.encode({ 
-                                    action = "showKeybind", 
-                                    show = true,
-                                    promptText = "Press ENTER to confirm: " .. keyName,
-                                    text = keyName
-                                }))
-                            end
-                            PlaySoundFrontend(-1, "SELECT", "HUD_FRONTEND_DEFAULT_SOUNDSET", true)
-                            break
-                        end
-                    end
-                end
-            end
-        else
-            -- Open Menu Only
-            if not menuOpen and menuOpenKey and (IsDisabledControlJustPressed(0, menuOpenKey) or IsControlJustPressed(0, menuOpenKey)) then
-                menuOpen = true
-                initDui()
-                updateUI()
+        -- Toggle Menu (INSERT or custom key)
+        local key = menuOpenKey or 121 -- default INSERT
+        if IsControlJustPressed(0, key) or IsDisabledControlJustPressed(0, key) then
+            menuOpen = not menuOpen
+            if menuOpen then
+                PlaySoundFrontend(-1, "SELECT", "HUD_FRONTEND_DEFAULT_SOUNDSET", true)
             end
         end
         
-        if duiObj then
-            -- Draw the web UI onto the screen (x=0.5 centers the 1920 canvas)
-            DrawSprite(txd, txn, 0.5, 0.5, 1.0, 1.0, 0.0, 255, 255, 255, 255)
+        if menuOpen and not isSearching then
+            DisableControlAction(0, 172, true) -- Up
+            DisableControlAction(0, 173, true) -- Down
+            DisableControlAction(0, 174, true) -- Left
+            DisableControlAction(0, 175, true) -- Right
+            DisableControlAction(0, 176, true) -- Enter
+            DisableControlAction(0, 177, true) -- Backspace
             
-            if menuOpen and not waitingForKey and not isSearching then
-                -- Disable controls while menu is open to prevent game conflicts
-
-                DisableControlAction(0, 44, true) -- Q (Cover)
-                DisableControlAction(0, 38, true) -- E (Context)
-                DisableControlAction(0, 172, true) -- Up
-                DisableControlAction(0, 173, true) -- Down
-                DisableControlAction(0, 174, true) -- Left
-                DisableControlAction(0, 175, true) -- Right
-                DisableControlAction(0, 176, true) -- Enter
-                DisableControlAction(0, 177, true) -- Backspace
-                
-                local changed = false
-                local activeCategory = categories[currentCategory]
-                local tabs = activeCategory.tabs
-                local activeTab = tabs[currentTabIdx]
-                local hasItems = #activeTab.items > 0
-                
-                -- Up
+            BuildDynamicTabs()
+            
+            local activeCategory = categories[currentCategory]
+            local activeTab = activeCategory.tabs[currentTabIdx]
+            local items = activeTab.items
+            local hasItems = #items > 0
+            
+            -- Input Handling
+            if hasItems then
                 local upPressed = IsDisabledControlJustPressed(0, 172)
                 local upHeld = IsDisabledControlPressed(0, 172)
                 if upPressed then 
-                    upDelay = 250 
-                    lastUpTime = GetGameTimer() 
+                    upDelay = 250 lastUpTime = GetGameTimer() 
                 elseif upHeld and GetGameTimer() - lastUpTime > upDelay then
-                    upPressed = true
-                    upDelay = 40
-                    lastUpTime = GetGameTimer()
+                    upPressed = true upDelay = 40 lastUpTime = GetGameTimer()
                 end
 
-                if upPressed and hasItems then
+                if upPressed then
                     currentItemIdx = currentItemIdx - 1
-                    if currentItemIdx < 1 then currentItemIdx = #activeTab.items end
-                    -- Skip separators
-                    while activeTab.items[currentItemIdx] and activeTab.items[currentItemIdx].type == "separator" do
+                    if currentItemIdx < 1 then currentItemIdx = #items end
+                    while items[currentItemIdx] and items[currentItemIdx].type == "separator" do
                         currentItemIdx = currentItemIdx - 1
-                        if currentItemIdx < 1 then currentItemIdx = #activeTab.items end
+                        if currentItemIdx < 1 then currentItemIdx = #items end
                     end
-                    changed = true
+                    PlaySoundFrontend(-1, "NAV_UP_DOWN", "HUD_FRONTEND_DEFAULT_SOUNDSET", true)
                 end
                 
-                -- Down
                 local downPressed = IsDisabledControlJustPressed(0, 173)
                 local downHeld = IsDisabledControlPressed(0, 173)
                 if downPressed then 
-                    downDelay = 250 
-                    lastDownTime = GetGameTimer() 
+                    downDelay = 250 lastDownTime = GetGameTimer() 
                 elseif downHeld and GetGameTimer() - lastDownTime > downDelay then
-                    downPressed = true
-                    downDelay = 40
-                    lastDownTime = GetGameTimer()
+                    downPressed = true downDelay = 40 lastDownTime = GetGameTimer()
                 end
 
-                if downPressed and hasItems then
+                if downPressed then
                     currentItemIdx = currentItemIdx + 1
-                    if currentItemIdx > #activeTab.items then currentItemIdx = 1 end
-                    -- Skip separators
-                    while activeTab.items[currentItemIdx] and activeTab.items[currentItemIdx].type == "separator" do
+                    if currentItemIdx > #items then currentItemIdx = 1 end
+                    while items[currentItemIdx] and items[currentItemIdx].type == "separator" do
                         currentItemIdx = currentItemIdx + 1
-                        if currentItemIdx > #activeTab.items then currentItemIdx = 1 end
+                        if currentItemIdx > #items then currentItemIdx = 1 end
                     end
-                    changed = true
+                    PlaySoundFrontend(-1, "NAV_UP_DOWN", "HUD_FRONTEND_DEFAULT_SOUNDSET", true)
                 end
                 
-
-                -- F7 (Bind Item)
-                if IsDisabledControlJustPressed(0, 168) and hasItems then
-                    local item = activeTab.items[currentItemIdx]
-                    if item.type ~= "separator" and item.type ~= "search" then
-                        waitingForBindItem = item
-                        menuOpen = false
-                        updateUI()
-                        ShowNotification("Press any key to bind: " .. item.label .. ". ESC to cancel.")
-                    end
-                end
-                
-                -- Tab Left (Q is 44)
-                if IsDisabledControlJustPressed(0, 44) then
-                    repeat
-                        currentTabIdx = currentTabIdx - 1
-                        if currentTabIdx < 1 then currentTabIdx = #tabs end
-                    until not tabs[currentTabIdx].hidden
-                    
-                    currentItemIdx = 1
-                    while tabs[currentTabIdx].items[currentItemIdx] and tabs[currentTabIdx].items[currentItemIdx].type == "separator" do
-                        currentItemIdx = currentItemIdx + 1
-                    end
-                    changed = true
-                end
-                
-                -- Tab Right (E is 38)
-                if IsDisabledControlJustPressed(0, 38) then
-                    repeat
-                        currentTabIdx = currentTabIdx + 1
-                        if currentTabIdx > #tabs then currentTabIdx = 1 end
-                    until not tabs[currentTabIdx].hidden
-                    
-                    currentItemIdx = 1
-                    while tabs[currentTabIdx].items[currentItemIdx] and tabs[currentTabIdx].items[currentItemIdx].type == "separator" do
-                        currentItemIdx = currentItemIdx + 1
-                    end
-                    changed = true
-                end
-                
-                -- Item Value Left (Arrow Left is 174)
-                if IsDisabledControlJustPressed(0, 174) and hasItems then
-                    local item = activeTab.items[currentItemIdx]
-                    if item.type == "slider" then
-                        state[item.var] = math.max(item.min, state[item.var] - item.step)
-                        changed = true
-                    elseif item.type == "list" then
-                        item.listIndex = item.listIndex - 1
-                        if item.listIndex < 1 then item.listIndex = #item.list end
-                        changed = true
-                    end
-                end
-                
-                -- Item Value Right (Arrow Right is 175)
-                if IsDisabledControlJustPressed(0, 175) and hasItems then
-                    local item = activeTab.items[currentItemIdx]
-                    if item.type == "slider" then
-                        state[item.var] = math.min(item.max, state[item.var] + item.step)
-                        changed = true
-                    elseif item.type == "list" then
-                        item.listIndex = item.listIndex + 1
-                        if item.listIndex > #item.list then item.listIndex = 1 end
-                        changed = true
-                    end
-                end
-                
-                -- Enter (176) / Accept (201)
-                if (IsDisabledControlJustPressed(0, 176) or IsControlJustPressed(0, 201)) and not IsControlPressed(0, 24) and not IsDisabledControlPressed(0, 24) and hasItems then
-                    local item = activeTab.items[currentItemIdx]
-                    if item.type == "toggle" then
-                        state[item.var] = not state[item.var]
-                        
-                        if item.var == "god" then
-                            SetEntityInvincible(PlayerPedId(), state.god)
-                        elseif item.var == "invis" then
-                            SetEntityVisible(PlayerPedId(), not state.invis, false)
-                        elseif item.var == "nightvision" then
-                            SetNightvision(state.nightvision)
-                        elseif item.var == "thermalvision" then
-                            SetSeethrough(state.thermalvision)
-                        elseif item.var == "infammo" then
-                            SetPedInfiniteAmmo(PlayerPedId(), state.infammo)
+                -- Left/Right for sliders and lists
+                local selectedItem = items[currentItemIdx]
+                if selectedItem then
+                    if IsDisabledControlJustPressed(0, 174) then -- Left
+                        if selectedItem.type == "slider" then
+                            state[selectedItem.var] = math.max(selectedItem.min, state[selectedItem.var] - selectedItem.step)
+                            PlaySoundFrontend(-1, "NAV_LEFT_RIGHT", "HUD_FRONTEND_DEFAULT_SOUNDSET", true)
+                        elseif selectedItem.type == "list" then
+                            selectedItem.listIndex = selectedItem.listIndex - 1
+                            if selectedItem.listIndex < 1 then selectedItem.listIndex = #selectedItem.list end
+                            PlaySoundFrontend(-1, "NAV_LEFT_RIGHT", "HUD_FRONTEND_DEFAULT_SOUNDSET", true)
+                            if selectedItem.action then selectedItem.action(selectedItem) end
                         end
-                    elseif (item.type == "button" or item.type == "list") and item.action then
-                        item.action(item)
-                    end
-                    changed = true
-                end
-                
-                -- Backspace (177)
-                if IsDisabledControlJustPressed(0, 177) then
-                    if activeTab.hidden and activeTab.parentTab then
-                        for i, t in ipairs(tabs) do
-                            if t.name == activeTab.parentTab then
-                                currentTabIdx = i
-                                currentItemIdx = 1
-                                changed = true
-                                break
-                            end
+                    elseif IsDisabledControlJustPressed(0, 175) then -- Right
+                        if selectedItem.type == "slider" then
+                            state[selectedItem.var] = math.min(selectedItem.max, state[selectedItem.var] + selectedItem.step)
+                            PlaySoundFrontend(-1, "NAV_LEFT_RIGHT", "HUD_FRONTEND_DEFAULT_SOUNDSET", true)
+                        elseif selectedItem.type == "list" then
+                            selectedItem.listIndex = selectedItem.listIndex + 1
+                            if selectedItem.listIndex > #selectedItem.list then selectedItem.listIndex = 1 end
+                            PlaySoundFrontend(-1, "NAV_LEFT_RIGHT", "HUD_FRONTEND_DEFAULT_SOUNDSET", true)
+                            if selectedItem.action then selectedItem.action(selectedItem) end
                         end
-                    elseif currentCategory ~= "main" then
-                        currentCategory = "main"
-                        currentTabIdx = 1
-                        currentItemIdx = 1
-                        changed = true
-                    else
-                        menuOpen = false
-                        updateUI()
+                    elseif IsDisabledControlJustPressed(0, 176) then -- Enter
+                        if selectedItem.type == "button" and selectedItem.action then
+                            selectedItem.action(selectedItem)
+                            PlaySoundFrontend(-1, "SELECT", "HUD_FRONTEND_DEFAULT_SOUNDSET", true)
+                        elseif selectedItem.type == "toggle" then
+                            state[selectedItem.var] = not state[selectedItem.var]
+                            PlaySoundFrontend(-1, "SELECT", "HUD_FRONTEND_DEFAULT_SOUNDSET", true)
+                        end
                     end
-                end
-                
-                if changed then
-                    updateUI()
                 end
             end
+            
+            -- Backspace to go back tabs or categories
+            if IsDisabledControlJustPressed(0, 177) then
+                if activeTab.parentTab then
+                    for i, t in ipairs(activeCategory.tabs) do
+                        if t.name == activeTab.parentTab then
+                            currentTabIdx = i
+                            currentItemIdx = 1
+                            PlaySoundFrontend(-1, "BACK", "HUD_FRONTEND_DEFAULT_SOUNDSET", true)
+                            break
+                        end
+                    end
+                elseif currentCategory ~= "main" then
+                    currentCategory = "main"
+                    currentTabIdx = 1
+                    currentItemIdx = 1
+                    PlaySoundFrontend(-1, "BACK", "HUD_FRONTEND_DEFAULT_SOUNDSET", true)
+                end
+            end
+            
+            -- Rendering Variables
+            local bgX, bgY, bgW, bgH = 0.5, 0.5, 0.22, 0.55
+            if state.menuAlign == "Left" then bgX = 0.15 end
+            if state.menuAlign == "Right" then bgX = 0.85 end
+            
+            local startY = bgY - (bgH / 2) + 0.02
+            
+            -- Background
+            DrawRect2D(bgX, bgY, bgW, bgH, 15, 15, 15, 240)
+            
+            -- Header
+            DrawRect2D(bgX, startY, bgW, 0.04, 255, 0, 0, 255)
+            DrawText2D(bgX - (bgW/2) + 0.01, startY - 0.012, "21 MENU", 0.35, 255, 255, 255, 255, 4)
+            
+            -- Category & Tab Info
+            local infoStr = activeCategory.title .. " > " .. activeTab.name
+            DrawRect2D(bgX, startY + 0.04, bgW, 0.03, 30, 30, 30, 255)
+            DrawText2D(bgX - (bgW/2) + 0.01, startY + 0.027, infoStr, 0.28, 200, 200, 200, 255, 4)
+            
+            -- Draw Items
+            local itemY = startY + 0.08
+            local maxVisible = 12
+            local startIdx = math.max(1, currentItemIdx - maxVisible + 1)
+            
+            for i = startIdx, math.min(#items, startIdx + maxVisible - 1) do
+                local item = items[i]
+                local isSelected = (i == currentItemIdx)
+                
+                if isSelected then
+                    DrawRect2D(bgX, itemY + 0.013, bgW, 0.03, 255, 0, 0, 150)
+                end
+                
+                local r, g, b = 255, 255, 255
+                if item.type == "separator" then
+                    r, g, b = 150, 150, 150
+                    DrawRect2D(bgX, itemY + 0.013, bgW, 0.03, 20, 20, 20, 255)
+                end
+                
+                DrawText2D(bgX - (bgW/2) + 0.01, itemY, item.label, 0.28, r, g, b, 255, 4)
+                
+                -- Right-aligned values
+                local rightText = ""
+                if item.type == "toggle" then
+                    rightText = state[item.var] and "[ON]" or "[OFF]"
+                    if state[item.var] then DrawText2D(bgX + (bgW/2) - 0.03, itemY, rightText, 0.28, 0, 255, 0, 255, 4)
+                    else DrawText2D(bgX + (bgW/2) - 0.035, itemY, rightText, 0.28, 255, 0, 0, 255, 4) end
+                elseif item.type == "slider" then
+                    rightText = "< " .. tostring(state[item.var]) .. " >"
+                    DrawText2D(bgX + (bgW/2) - 0.04, itemY, rightText, 0.28, 255, 255, 255, 255, 4)
+                elseif item.type == "list" then
+                    rightText = "< " .. item.list[item.listIndex].name .. " >"
+                    DrawText2D(bgX + (bgW/2) - 0.05, itemY, rightText, 0.28, 255, 255, 255, 255, 4)
+                elseif item.type == "button" or item.type == "search" then
+                    rightText = ">>"
+                    DrawText2D(bgX + (bgW/2) - 0.02, itemY, rightText, 0.28, 200, 200, 200, 255, 4)
+                end
+                
+                itemY = itemY + 0.03
+            end
+            
+            -- Footer (Item Count)
+            local footerY = startY + 0.08 + (maxVisible * 0.03) + 0.01
+            DrawRect2D(bgX, footerY, bgW, 0.03, 30, 30, 30, 255)
+            DrawText2D(bgX + (bgW/2) - 0.035, footerY - 0.01, currentItemIdx .. " / " .. #items, 0.28, 255, 255, 255, 255, 4)
         end
     end
 end)
-
--- ==========================================
--- MOD FEATURES THREADS
--- ==========================================
-
-Citizen.CreateThread(function()
-    while true do
-        Citizen.Wait(0)
-        local ped = PlayerPedId()
-        
-        if state.timecontrol then
-            NetworkOverrideClockTime(math.floor(state.time), 0, 0)
-        end
-        
-        if state.fastrun then
-            SetRunSprintMultiplierForPlayer(PlayerId(), 1.5)
-        else
-            SetRunSprintMultiplierForPlayer(PlayerId(), 1.0)
-        end
-        
-        if state.superjump then
-            SetSuperJumpThisFrame(PlayerId())
-        end
-        
-        if state.neverwanted then
-            SetPlayerWantedLevel(PlayerId(), 0, false)
-            SetPlayerWantedLevelNow(PlayerId(), false)
-        end
-        
-        if state.rainbowcar then
-            local vehicle = GetVehiclePedIsIn(ped, false)
-            if DoesEntityExist(vehicle) then
-                local time = GetGameTimer() / 1000
-                local r = math.sin(time * 1.0) * 127 + 128
-                local g = math.sin(time * 1.0 + 2) * 127 + 128
-                local b = math.sin(time * 1.0 + 4) * 127 + 128
-                SetVehicleCustomPrimaryColour(vehicle, math.floor(r), math.floor(g), math.floor(b))
-            end
-        end
-        
-        if state.vehiclegod then
-            local vehicle = GetVehiclePedIsIn(ped, false)
-            if DoesEntityExist(vehicle) then
-                SetEntityInvincible(vehicle, true)
-            end
-        end
-        
-        if state.fireammo then SetFireAmmoThisFrame(PlayerId()) end
-        if state.explosiveammo then SetExplosiveAmmoThisFrame(PlayerId()) end
-        if state.explosivemelee then SetExplosiveMeleeThisFrame(PlayerId()) end
-        
-        if state.noclip then
-            wasNoclip = true
-            SetEntityVisible(ped, false, false)
-            SetEntityCollision(ped, false, false)
-            FreezeEntityPosition(ped, true)
-            
-            local speed = state.noclipSpeed / 10.0
-            local coords = GetEntityCoords(ped)
-            local camRot = GetGameplayCamRot(2)
-            local camPitch = camRot.x
-            local camHeading = camRot.z
-            
-            local forward = vector3(-math.sin(math.rad(camHeading)) * math.cos(math.rad(camPitch)), math.cos(math.rad(camHeading)) * math.cos(math.rad(camPitch)), math.sin(math.rad(camPitch)))
-            local right = vector3(math.cos(math.rad(camHeading)), math.sin(math.rad(camHeading)), 0.0)
-            local up = vector3(0.0, 0.0, 1.0)
-            
-            local moveX, moveY, moveZ = 0.0, 0.0, 0.0
-            
-            if IsControlPressed(0, 32) then -- W
-                moveX, moveY, moveZ = moveX + forward.x, moveY + forward.y, moveZ + forward.z
-            end
-            if IsControlPressed(0, 33) then -- S
-                moveX, moveY, moveZ = moveX - forward.x, moveY - forward.y, moveZ - forward.z
-            end
-            if IsControlPressed(0, 34) then -- A
-                moveX, moveY, moveZ = moveX - right.x, moveY - right.y, moveZ - right.z
-            end
-            if IsControlPressed(0, 35) then -- D
-                moveX, moveY, moveZ = moveX + right.x, moveY + right.y, moveZ + right.z
-            end
-            if IsControlPressed(0, 22) then -- Space (Up)
-                moveX, moveY, moveZ = moveX + up.x, moveY + up.y, moveZ + up.z
-            end
-            if IsControlPressed(0, 36) then -- LCtrl (Down)
-                moveX, moveY, moveZ = moveX - up.x, moveY - up.y, moveZ - up.z
-            end
-            
-            local newCoords = coords + vector3(moveX, moveY, moveZ) * speed
-            SetEntityCoordsNoOffset(ped, newCoords.x, newCoords.y, newCoords.z, true, true, true)
-        elseif wasNoclip then
-            wasNoclip = false
-            SetEntityVisible(ped, true, false)
-            SetEntityCollision(ped, true, true)
-            FreezeEntityPosition(ped, false)
-        end
-        
-        if state.triggerbot then
-            if IsPlayerFreeAiming(PlayerId()) then
-                local _, target = GetEntityPlayerIsFreeAimingAt(PlayerId())
-                if target and DoesEntityExist(target) and IsEntityAPed(target) and not IsEntityDead(target) then
-                    SetControlNormal(0, 24, 1.0)
-                end
-            end
-        end
-        
-        if state.aimbot then
-            if IsControlPressed(0, 25) then -- Right click Aiming
-                local closestPed = nil
-                local closestDist = 150.0
-                local camPos = GetGameplayCamCoord()
-                
-                for _, p in ipairs(GetActivePlayers()) do
-                    local target = GetPlayerPed(p)
-                    if target ~= ped and not IsEntityDead(target) then
-                        local targetPos = GetPedBoneCoords(target, 31086, 0.0, 0.0, 0.0)
-                        local dist = #(camPos - targetPos)
-                        if dist < closestDist and HasEntityClearLosToEntity(ped, target, 17) then
-                            local onScreen, _, _ = GetScreenCoordFromWorldCoord(targetPos.x, targetPos.y, targetPos.z)
-                            if onScreen then
-                                closestDist = dist
-                                closestPed = target
-                            end
-                        end
-                    end
-                end
-                
-                if closestPed then
-                    local targetPos = GetPedBoneCoords(closestPed, 31086, 0.0, 0.0, 0.0)
-                    local diff = targetPos - camPos
-                    local length = #diff
-                    if length > 0 then
-                        local yaw = math.deg(math.atan(diff.x, diff.y) * -1)
-                        local pitch = math.deg(math.asin(diff.z / length))
-                        
-                        local relativeHeading = yaw - GetEntityHeading(ped)
-                        while relativeHeading < -180.0 do relativeHeading = relativeHeading + 360.0 end
-                        while relativeHeading > 180.0 do relativeHeading = relativeHeading - 360.0 end
-                        
-                        SetGameplayCamRelativeHeading(relativeHeading)
-                        SetGameplayCamRelativePitch(pitch, 1.0)
-                    end
-                end
-            end
-        end
-        
-        if state.boxesp then
-            for _, p in ipairs(GetActivePlayers()) do
-                local target = GetPlayerPed(p)
-                if target ~= ped and not IsEntityDead(target) then
-                    local targetPos = GetEntityCoords(target)
-                    local dist = #(GetEntityCoords(ped) - targetPos)
-                    if dist < 200.0 then
-                        local head = GetPedBoneCoords(target, 31086, 0.0, 0.0, 0.0)
-                        local foot = GetEntityCoords(target)
-                        
-                        local _, hx, hy = GetScreenCoordFromWorldCoord(head.x, head.y, head.z + 0.3)
-                        local _, fx, fy = GetScreenCoordFromWorldCoord(foot.x, foot.y, foot.z - 0.1)
-                        
-                        if hx and fx then
-                            local height = math.abs(fy - hy)
-                            local width = height * 0.5
-                            local x1 = hx - (width/2)
-                            local x2 = hx + (width/2)
-                            
-                            DrawRect(hx, hy + (height/2), width, height, 255, 0, 0, 50) -- Transparent inner
-                            DrawRect(hx, hy, width, 0.002, 255, 0, 0, 255) -- Top
-                            DrawRect(hx, fy, width, 0.002, 255, 0, 0, 255) -- Bottom
-                            DrawRect(x1, hy + (height/2), 0.0015, height, 255, 0, 0, 255) -- Left
-                            DrawRect(x2, hy + (height/2), 0.0015, height, 255, 0, 0, 255) -- Right
-                        end
-                    end
-                end
-            end
-        end
-        
-        if state.esp then
-            for _, p in ipairs(GetActivePlayers()) do
-                local target = GetPlayerPed(p)
-                if target ~= ped then
-                    local coords = GetEntityCoords(target)
-                    local dist = #(GetEntityCoords(ped) - coords)
-                    if dist < 200.0 then
-                        SetDrawOrigin(coords.x, coords.y, coords.z + 1.0, 0)
-                        SetTextFont(0)
-                        SetTextScale(0.0, 0.3)
-                        SetTextColour(255, 0, 0, 255)
-                        SetTextCentre(1)
-                        SetTextEntry("STRING")
-                        AddTextComponentString(GetPlayerName(p) .. " [" .. math.floor(dist) .. "m]")
-                        DrawText(0.0, 0.0)
-                        ClearDrawOrigin()
-                    end
-                end
-            end
-        end
-        
-    end
-end)
-
--- Background Bind Executor
+\n-- Background Bind Executor
 Citizen.CreateThread(function()
     while true do
         Citizen.Wait(0)
