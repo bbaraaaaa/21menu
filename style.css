@@ -91,11 +91,13 @@ body {
     top: 50px;
     left: 50px; /* JS overrides this */
     width: 400px;
-    background-color: #000;
+    background-color: rgba(5, 5, 5, 0.85); /* Slightly transparent for blur */
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
     border-radius: 8px; /* ARYA style has slight rounding */
     overflow: hidden;
-    box-shadow: 0 20px 60px rgba(0,0,0,0.9);
-    border: 1px solid #1c1c1c;
+    box-shadow: 0 20px 60px rgba(0,0,0,0.9), 0 0 10px rgba(255,255,255,0.03);
+    border: 1px solid rgba(255,255,255,0.08);
     display: flex;
     flex-direction: column;
 }
@@ -113,10 +115,10 @@ body {
 }
 
 .header {
-    background-color: #000;
+    background-color: rgba(0, 0, 0, 0.5);
     padding: 12px;
     text-align: center;
-    border-bottom: 1px solid #222;
+    border-bottom: 1px solid rgba(255,255,255,0.05);
 }
 .header h2 {
     font-size: 15px;
@@ -128,8 +130,8 @@ body {
 /* Horizontal Tabs (ARYA style) */
 .tabs-container {
     display: flex;
-    background-color: #121212;
-    border-bottom: 1px solid #222;
+    background-color: rgba(15, 15, 15, 0.7);
+    border-bottom: 1px solid rgba(255,255,255,0.05);
     padding: 0 2px;
 }
 .tab {
@@ -160,7 +162,7 @@ body {
 /* List Wrapper for Smooth Selection */
 .list-wrapper {
     position: relative;
-    background-color: #050505;
+    background-color: rgba(0, 0, 0, 0.4);
     min-height: 400px; /* Dynamic via JS but good default */
 }
 
@@ -274,12 +276,12 @@ body {
 }
 
 .footer {
-    background-color: #000;
+    background-color: rgba(0, 0, 0, 0.7);
     padding: 12px 15px;
     display: flex;
     justify-content: space-between;
     font-size: 12px;
     color: #888;
-    border-top: 1px solid #1a1a1a;
+    border-top: 1px solid rgba(255,255,255,0.05);
     font-weight: 600;
 }

@@ -731,7 +731,7 @@ Citizen.CreateThread(function()
                 DrawSprite("menu_textures", "banner", mX, mY, mW, 0.10, 0.0, 255, 255, 255, a)
             else
                 DrawRect(mX, mY, mW, 0.10, 15, 15, 15, a)
-                DrawTextUI("21 MENU", mX, mY - 0.04, 1.0, 7, 255, 255, 255, a, "center", true)
+                DrawTextUI("21", mX, mY - 0.04, 1.0, 7, 255, 255, 255, a, "center", true)
             end
             
             -- Title Bar
@@ -867,7 +867,7 @@ Citizen.CreateThread(function()
             -- Footer
             local footerY = yStart + (numItemsToDraw * 0.035)
             DrawRect(mX, footerY, mW, 0.03, 0, 0, 0, a)
-            DrawTextUI("21 | discord.gg/0e | [F7] Bind", mX - (mW/2) + 0.008, footerY - 0.012, 0.25, 0, 255, 255, 255, a, "left", false)
+            DrawTextUI("21 | discord.gg/2121 | [F7] Bind", mX - (mW/2) + 0.008, footerY - 0.012, 0.25, 0, 255, 255, 255, a, "left", false)
             if #items > 0 then
                 DrawTextUI(currentItemIdx .. " / " .. #items, mX + (mW/2) - 0.008, footerY - 0.012, 0.25, 0, 255, 255, 255, a, "right", false)
             end
