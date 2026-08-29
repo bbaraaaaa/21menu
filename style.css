@@ -115,17 +115,14 @@ body {
     object-fit: cover;
 }
 
-.banner-text {
+.banner-logo {
     position: absolute;
     top: 50%;
     left: 50%;
     transform: translate(-50%, -50%);
-    font-size: 85px;
-    font-family: 'Pirata One', cursive;
-    color: #fff;
-    -webkit-text-stroke: 1px rgba(0, 0, 0, 0.9);
-    filter: drop-shadow(0 5px 15px rgba(0,0,0,1)) drop-shadow(0 0 20px rgba(255,255,255,0.8)); /* Stronger white glow */
-    letter-spacing: 3px;
+    width: auto;
+    height: 70%; /* Scale to fit inside the banner */
+    filter: drop-shadow(0 5px 15px rgba(0,0,0,1)) drop-shadow(0 0 20px rgba(255,255,255,0.8));
     z-index: 2;
     pointer-events: none;
 }
