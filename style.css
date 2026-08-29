@@ -91,7 +91,7 @@ body {
     top: 50px;
     left: 50px; /* JS overrides this */
     width: 400px;
-    background-color: rgba(5, 5, 5, 0.90); /* 90% opacity as requested */
+    background-color: rgba(7, 11, 20, 0.90); /* Midnight blue glass */
     backdrop-filter: blur(16px);
     -webkit-backdrop-filter: blur(16px);
     border-radius: 8px; /* ARYA style has slight rounding */
@@ -131,7 +131,7 @@ body {
 }
 
 .header {
-    background-color: rgba(0, 0, 0, 0.9);
+    background-color: rgba(4, 7, 15, 0.92);
     padding: 12px;
     text-align: center;
     border-bottom: 1px solid rgba(255,255,255,0.05);
@@ -146,7 +146,7 @@ body {
 /* Horizontal Tabs (ARYA style) */
 .tabs-container {
     display: flex;
-    background-color: rgba(0, 0, 0, 0.85);
+    background-color: rgba(4, 7, 15, 0.88);
     border-bottom: 1px solid rgba(255,255,255,0.05);
     padding: 0 2px;
 }
@@ -156,7 +156,7 @@ body {
     padding: 10px 0;
     font-size: 13px;
     font-weight: 600;
-    color: #666;
+    color: #6a7c92; /* Cool gray-blue */
     position: relative;
     transition: color 0.3s ease;
     cursor: pointer;
@@ -178,7 +178,7 @@ body {
 /* List Wrapper for Smooth Selection */
 .list-wrapper {
     position: relative;
-    background-color: rgba(0, 0, 0, 0.9);
+    background-color: rgba(7, 11, 20, 0.90);
     min-height: 400px; /* Dynamic via JS but good default */
 }
 
@@ -187,7 +187,7 @@ body {
     left: 0;
     right: 0;
     height: 40px;
-    background-color: rgba(255, 255, 255, 0.9);
+    background-color: rgba(220, 230, 240, 0.95); /* Slightly cool white */
     transition: transform 0.12s cubic-bezier(0.2, 0.8, 0.2, 1); /* 60fps Smooth glide! */
     z-index: 1;
     opacity: 0;
@@ -212,12 +212,12 @@ body {
     align-items: center;
     font-size: 14px;
     font-weight: 600;
-    color: #ccc;
+    color: #b0c0d0; /* Cool gray */
     transition: color 0.15s ease;
     border-bottom: 1px solid rgba(255,255,255,0.02);
 }
 .menu-item.selected {
-    color: #000; /* Black text when white selection box is underneath */
+    color: #070b14; /* Deep midnight blue text when selected */
 }
 
 .menu-item .left {
@@ -267,15 +267,15 @@ body {
     background-color: #000;
 }
 
-/* Toggle colors when SELECTED row (black background toggle on white selection box) */
+/* Toggle colors when SELECTED row (dark blue background toggle on cool white selection box) */
 .menu-item.selected .toggle-switch {
-    background-color: #aaa;
+    background-color: #8fa0b5;
 }
 .menu-item.selected .toggle-switch::after {
-    background-color: #444;
+    background-color: #4a5d73;
 }
 .menu-item.selected .toggle-switch.on {
-    background-color: #000;
+    background-color: #070b14;
 }
 .menu-item.selected .toggle-switch.on::after {
     background-color: #fff;
@@ -284,21 +284,21 @@ body {
 /* Separator */
 .menu-separator {
     justify-content: center;
-    color: #555 !important;
+    color: #4a5d73 !important;
     font-size: 12px;
     font-weight: 700;
 }
 .menu-item.selected.menu-separator {
-    color: #555 !important; /* Separator never turns black */
+    color: #4a5d73 !important; /* Separator never turns dark */
 }
 
 .footer {
-    background-color: rgba(0, 0, 0, 0.90);
+    background-color: rgba(4, 7, 15, 0.95);
     padding: 12px 15px;
     display: flex;
     justify-content: space-between;
     font-size: 12px;
-    color: #888;
+    color: #6a7c92;
     border-top: 1px solid rgba(255,255,255,0.05);
     font-weight: 600;
 }
