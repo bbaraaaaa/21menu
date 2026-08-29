@@ -121,7 +121,7 @@ body {
     left: 50%;
     transform: translate(-50%, -50%);
     width: auto;
-    height: 70%; /* Scale to fit inside the banner */
+    height: 85px; /* Match the exact size of the previous text */
     filter: drop-shadow(0 5px 15px rgba(0,0,0,1)) drop-shadow(0 0 20px rgba(255,255,255,0.8));
     z-index: 2;
     pointer-events: none;
