@@ -179,7 +179,12 @@ body {
 ========================================= */
 .menu-items {
     max-height: 750px;
-    overflow: hidden;
+    overflow-y: auto;
+    -ms-overflow-style: none; /* IE and Edge */
+    scrollbar-width: none; /* Firefox */
+}
+.menu-items::-webkit-scrollbar {
+    display: none; /* Chrome, Safari, Opera */
 }
 
 .item {
