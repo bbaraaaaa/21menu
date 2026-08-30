@@ -1,3 +1,5 @@
+let currentStartIndex = 0;
+
 window.addEventListener("message", function(event) {
     const data = event.data;
     
@@ -75,18 +77,25 @@ window.addEventListener("message", function(event) {
         itemsContainer.innerHTML = "";
 
         if (payload.items && payload.items.length > 0) {
-            // Check if selectedIndex is 1-based (from Lua) or 0-based
-            let actualSelectedIndex = payload.selectedIndex;
-            // If the Lua script sends 1-based index (e.g. 1 for first item), we convert to 0-based
-            // If it sends 0-based, we leave it. A simple heuristic is assuming it's 1-based.
-            // But let's just support exactly what Lua sends.
-            // In 21MENUv2.lua: selectedIndex = currentItemIdx (1-based)
-            const is1Based = payload.selectedIndex > 0 && payload.selectedIndex <= payload.items.length;
+            const jsSelectedIndex = (payload.selectedIndex || 1) - 1;
+            const maxVisible = 10;
             
-            payload.items.forEach((item, index) => {
-                // Determine if this item is selected.
-                // Assuming Lua sends 1-based index (currentItemIdx)
-                const isSelected = index === (payload.selectedIndex - 1);
+            if (jsSelectedIndex < currentStartIndex) {
+                currentStartIndex = jsSelectedIndex;
+            } else if (jsSelectedIndex >= currentStartIndex + maxVisible) {
+                currentStartIndex = jsSelectedIndex - maxVisible + 1;
+            }
+            
+            if (currentStartIndex > payload.items.length - maxVisible) {
+                currentStartIndex = Math.max(0, payload.items.length - maxVisible);
+            }
+            
+            const endIndex = Math.min(payload.items.length, currentStartIndex + maxVisible);
+            const visibleItems = payload.items.slice(currentStartIndex, endIndex);
+            
+            visibleItems.forEach((item, indexOffset) => {
+                const index = currentStartIndex + indexOffset;
+                const isSelected = index === jsSelectedIndex;
                 
                 if (item.type === "separator") {
                     const sep = document.createElement("div");
