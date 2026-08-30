@@ -6,7 +6,7 @@
     --text-selected: #000000;
     --border-color: rgba(255, 255, 255, 0.1);
     --accent: #ffffff;
-    --menu-width: 380px;
+    --menu-width: 300px;
 }
 
 * {
@@ -178,7 +178,7 @@ body {
    ITEMS
 ========================================= */
 .menu-items {
-    max-height: 450px;
+    max-height: 600px;
     overflow: hidden;
 }
 
