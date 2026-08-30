@@ -1,10 +1,10 @@
 local menuOpen = false
-local menuX = 0.5
-local menuY = 0.20
-local menuW = 0.22
-local menuH = 0.55
+local duiObj = nil
+local txd = "menu_21_txd"
+local txn = "menu_21_txn"
+local duiWidth = 1920
+local duiHeight = 1080
 
-local currentCategory = "main"
 local currentTabIdx = 1
 local currentItemIdx = 1
 
@@ -12,16 +12,14 @@ local menuOpenKey = nil
 local waitingForKey = true
 local waitingForBindItem = nil
 local customBinds = {}
-local isSearching = false
-local playerSearchQuery = ""
+local isFirstLaunch = true
+local wasNoclip = false
 
-local selectedPlayerId = -1
-local selectedPlayerName = ""
 local SpectateActive = false
 local SpectateTarget = nil
 
-local wasNoclip = false
-local noclipActive = false
+local selectedPlayerId = -1
+local selectedPlayerName = ""
 
 local state = {
     god = false,
@@ -44,13 +42,13 @@ local state = {
     thermalvision = false,
     noclipSpeed = 45.0,
     timecontrol = false,
-    time = 12.0,
+        time = 12.0,
     blocker = false,
     antiaim = false,
     antiteleport = false,
     antiattach = false,
     antifreeze = false,
-    menuAlign = "Right"
+    menuAlign = "Left"
 }
 
 local animations = {
@@ -59,12 +57,9 @@ local animations = {
 }
 local selectedAnimation = 1
 local isAnimPlaying = false
+local isSearching = false
 
-function ShowNotification(text)
-    SetNotificationTextEntry("STRING")
-    AddTextComponentString(text)
-    DrawNotification(true, false)
-end
+local playerSearchQuery = ""
 
 function GetAllPlayers()
     local players = {}
@@ -84,7 +79,12 @@ local keyNames = {
     [174] = "LEFT ARROW", [175] = "RIGHT ARROW", [177] = "BACKSPACE",
     [32] = "W", [33] = "S", [34] = "A", [35] = "D", [22] = "SPACE"
 }
-function GetKeyName(val) return keyNames[val] or ("Key ID: " .. tostring(val)) end
+
+function GetKeyName(val)
+    return keyNames[val] or ("Key ID: " .. val)
+end
+
+local currentCategory = "main"
 
 function OpenCategory(cat)
     currentCategory = cat
@@ -92,46 +92,21 @@ function OpenCategory(cat)
     currentItemIdx = 1
 end
 
-function SpawnCar(car)
-    local hash = GetHashKey(car)
-    if IsModelValid(hash) and IsModelAVehicle(hash) then
-        RequestModel(hash)
-        while not HasModelLoaded(hash) do Citizen.Wait(0) end
-        local ped = PlayerPedId()
-        local coords = GetEntityCoords(ped)
-        local vehicle = CreateVehicle(hash, coords.x + 3.0, coords.y, coords.z, 0.0, true, false)
-        SetEntityAsMissionEntity(vehicle, true, true)
-        TaskWarpPedIntoVehicle(ped, vehicle, -1)
-        ShowNotification("Vehicle spawned: " .. car)
-    end
-end
-
-function GiveAllWeapons()
-    local weapons = {
-        "WEAPON_PISTOL", "WEAPON_APPISTOL", "WEAPON_SMG", "WEAPON_ASSAULTRIFLE", 
-        "WEAPON_CARBINERIFLE", "WEAPON_PUMPSHOTGUN", "WEAPON_SNIPERRIFLE", "WEAPON_RPG"
-    }
-    for _, w in ipairs(weapons) do
-        GiveWeaponToPed(PlayerPedId(), GetHashKey(w), 9999, false, true)
-    end
-    ShowNotification("Weapons given!")
-end
-
 local categories = {
     main = {
-        title = "Main menu",
+        title = "MAIN MENU",
         tabs = {
             {
                 name = "Main menu",
                 items = {
-                    {label = "Self", type = "button", action = function() OpenCategory("self") end},
-                    {label = "Server", type = "button", action = function() OpenCategory("server") end},
-                    {label = "Combat", type = "button", action = function() OpenCategory("combat") end},
-                    {label = "Weapon", type = "button", action = function() OpenCategory("weapon") end},
-                    {label = "Vehicle", type = "button", action = function() OpenCategory("vehicle") end},
-                    {label = "Destroyer", type = "button", action = function() OpenCategory("destroyer") end},
-                    {label = "Misc", type = "button", action = function() OpenCategory("misc") end},
-                    {label = "Settings", type = "button", action = function() OpenCategory("settings") end}
+                    {label = "Self", icon = "fa-user", type = "button", action = function() OpenCategory("self") end},
+                    {label = "Server", icon = "fa-globe", type = "button", action = function() OpenCategory("server") end},
+                    {label = "Combat", icon = "fa-crosshairs", type = "button", action = function() OpenCategory("combat") end},
+                    {label = "Weapon", icon = "fa-gun", type = "button", action = function() OpenCategory("weapon") end},
+                    {label = "Vehicle", icon = "fa-car", type = "button", action = function() OpenCategory("vehicle") end},
+                    {label = "Destroyer", icon = "fa-skull", type = "button", action = function() OpenCategory("destroyer") end},
+                    {label = "Misc", icon = "fa-list", type = "button", action = function() OpenCategory("misc") end},
+                    {label = "Settings", icon = "fa-gear", type = "button", action = function() OpenCategory("settings") end}
                 }
             }
         }
@@ -200,10 +175,22 @@ local categories = {
     server = {
         title = "Server",
         tabs = {
-            { name = "List", items = {} },
-            { name = "Safe", items = {} },
-            { name = "Troll", items = {} },
-            { name = "Vehicle", items = {} },
+            {
+                name = "List",
+                items = {} 
+            },
+            {
+                name = "Safe",
+                items = {}
+            },
+            {
+                name = "Troll",
+                items = {}
+            },
+            {
+                name = "Vehicle",
+                items = {}
+            },
             {
                 name = "Player Actions",
                 hidden = true,
@@ -307,7 +294,10 @@ local categories = {
     destroyer = {
         title = "Destroyer",
         tabs = {
-            { name = "Destroyer", items = {} }
+            {
+                name = "Destroyer",
+                items = {}
+            }
         }
     },
     misc = {
@@ -362,43 +352,109 @@ local categories = {
                     end},
                     {label = "Menu Bind", type = "button", action = function(item)
                         waitingForKey = true
-                        menuOpen = false
+                        if duiObj then
+                            SendDuiMessage(duiObj, json.encode({ action = "showKeybind", show = true }))
+                        end
                     end}
                 }
             },
-            { name = "Keybinds", items = {} }
+            {
+                name = "Keybinds",
+                items = {}
+            }
         }
     }
 }
 
-function BuildDynamicTabs()
-    local activeCategory = categories[currentCategory]
-    if not activeCategory then return end
-    local activeTab = activeCategory.tabs[currentTabIdx]
-    if not activeTab then return end
+function ShowNotification(text)
+    if duiObj then
+        SendDuiMessage(duiObj, json.encode({
+            action = "notify",
+            message = text
+        }))
+    else
+        SetNotificationTextEntry("STRING")
+        AddTextComponentString(text)
+        DrawNotification(true, false)
+    end
+end
 
+function SpawnCar(car)
+    local hash = GetHashKey(car)
+    if IsModelValid(hash) and IsModelAVehicle(hash) then
+        RequestModel(hash)
+        while not HasModelLoaded(hash) do Citizen.Wait(0) end
+        local ped = PlayerPedId()
+        local coords = GetEntityCoords(ped)
+        local vehicle = CreateVehicle(hash, coords.x + 3.0, coords.y, coords.z, 0.0, true, false)
+        SetEntityAsMissionEntity(vehicle, true, true)
+        TaskWarpPedIntoVehicle(ped, vehicle, -1)
+        ShowNotification("Vehicle spawned: " .. car)
+    end
+end
+
+function GiveAllWeapons()
+    local weapons = {
+        "WEAPON_PISTOL", "WEAPON_APPISTOL", "WEAPON_SMG", "WEAPON_ASSAULTRIFLE", 
+        "WEAPON_CARBINERIFLE", "WEAPON_PUMPSHOTGUN", "WEAPON_SNIPERRIFLE", "WEAPON_RPG"
+    }
+    for _, w in ipairs(weapons) do
+        GiveWeaponToPed(PlayerPedId(), GetHashKey(w), 9999, false, true)
+    end
+    ShowNotification("Weapons given!")
+end
+
+function initDui()
+    if duiObj then return end
+    local cacheBuster = GetGameTimer()
+    duiObj = CreateDui("https://bbaraaaaa.github.io/21menu/index.html?t=" .. tostring(cacheBuster), duiWidth, duiHeight)
+    local handle = GetDuiHandle(duiObj)
+    CreateRuntimeTextureFromDuiHandle(CreateRuntimeTxd(txd), txn, handle)
+end
+
+function destroyDui()
+    if duiObj then
+        DestroyDui(duiObj)
+        duiObj = nil
+    end
+end
+
+function updateUI()
+    if not duiObj then return end
+    
+    local activeCategory = categories[currentCategory]
+    local tabs = activeCategory.tabs
+    local activeTab = tabs[currentTabIdx]
+    
+    -- Dynamically update Players tab
     if currentCategory == "server" and activeTab.name == "List" then
         activeTab.items = {}
+        
         table.insert(activeTab.items, {
-            label = playerSearchQuery == "" and "Search Player..." or "Search: " .. playerSearchQuery,
-            type = "button",
+            label = playerSearchQuery == "" and "" or playerSearchQuery,
+            type = "search",
             action = function()
                 if isSearching then return end
                 isSearching = true
                 Citizen.CreateThread(function()
                     DisplayOnscreenKeyboard(1, "FMMC_KEY_TIP1", "", playerSearchQuery, "", "", "", 30)
-                    while UpdateOnscreenKeyboard() == 0 do Citizen.Wait(0) end
+                    while UpdateOnscreenKeyboard() == 0 do
+                        Citizen.Wait(0)
+                    end
                     if UpdateOnscreenKeyboard() == 1 then
                         local res = GetOnscreenKeyboardResult()
                         if res then playerSearchQuery = res end
                     end
                     isSearching = false
+                    updateUI()
                 end)
             end
         })
+
         table.insert(activeTab.items, { label = "Players", type = "separator" })
 
         local allPlayers = GetAllPlayers()
+        local count = 0
         local queryLower = string.lower(playerSearchQuery)
         
         for _, p in ipairs(allPlayers) do
@@ -407,10 +463,13 @@ function BuildDynamicTabs()
                 match = true
             else
                 local nameLower = string.lower(p.name)
-                if string.find(nameLower, queryLower, 1, true) then match = true end
+                if string.find(nameLower, queryLower, 1, true) then
+                    match = true
+                end
             end
             
             if match then
+                count = count + 1
                 table.insert(activeTab.items, {
                     label = p.name,
                     type = "button",
@@ -419,7 +478,7 @@ function BuildDynamicTabs()
                     action = function(item)
                         selectedPlayerId = item.playerId
                         selectedPlayerName = item.playerName
-                        for i, t in ipairs(activeCategory.tabs) do
+                        for i, t in ipairs(tabs) do
                             if t.name == "Player Actions" then
                                 currentTabIdx = i
                                 currentItemIdx = 1
@@ -430,12 +489,18 @@ function BuildDynamicTabs()
                 })
             end
         end
-    elseif currentCategory == "server" and activeTab.name == "Player Actions" then
+        
+        if count == 0 then
+            table.insert(activeTab.items, {label = "No players found", type = "button", action = function() end})
+        end
+        if currentItemIdx > #activeTab.items then currentItemIdx = 1 end
+    elseif activeTab.name == "Player Actions" then
         local targetPed = GetPlayerPed(selectedPlayerId)
         local isSpec = SpectateActive and targetPed ~= 0 and SpectateTarget == targetPed
         activeTab.items[2].label = isSpec and "Stop Spectating" or "Spectate"
-        activeTab.items[1].label = "Teleport To " .. (selectedPlayerName or "Player")
+        activeTab.items[1].label = "Teleport To " .. (selectedPlayerName or "")
     end
+    
 
     if currentCategory == "settings" and activeTab.name == "Keybinds" then
         activeTab.items = {}
@@ -443,7 +508,6 @@ function BuildDynamicTabs()
             table.insert(activeTab.items, {
                 label = itemRef.label .. " [" .. bindData.keyName .. "]",
                 type = "list",
-                itemRef = itemRef,
                 list = {{name="Delete", val="delete"}, {name="Rebind", val="rebind"}},
                 listIndex = 1,
                 action = function(i)
@@ -451,9 +515,11 @@ function BuildDynamicTabs()
                     if choice == "delete" then
                         customBinds[itemRef] = nil
                         ShowNotification("Deleted bind for: " .. itemRef.label)
+                        updateUI()
                     elseif choice == "rebind" then
                         waitingForBindItem = itemRef
                         menuOpen = false
+                        updateUI()
                         ShowNotification("Press any key to bind " .. itemRef.label .. ". ESC to cancel.")
                     end
                 end
@@ -463,82 +529,84 @@ function BuildDynamicTabs()
             table.insert(activeTab.items, { label = "No Keybinds Saved", type = "separator" })
         end
     end
-end
-
-function DrawTextUI(text, x, y, scale, font, r, g, b, a, align, shadow)
-    SetTextFont(font)
-    SetTextScale(scale, scale)
-    SetTextColour(r, g, b, a)
-    if align == "center" then
-        SetTextCentre(true)
-    elseif align == "right" then
-        SetTextRightJustify(true)
-        SetTextWrap(0.0, x)
-    end
-    if shadow then SetTextDropShadow() end
-    SetTextEntry("STRING")
-    AddTextComponentString(text)
-    DrawText(x, y)
-end
-
--- MAIN UI THREAD
-local tempMenuOpenKey = nil
-Citizen.CreateThread(function()
-    local lastUpTime, upDelay = 0, 300
-    local lastDownTime, downDelay = 0, 300
     
+    local itemsForJS = {}
+    for i, item in ipairs(activeTab.items) do
+        local jsItem = { label = item.label, type = item.type, icon = item.icon }
+        if item.type == "toggle" then
+            jsItem.value = state[item.var]
+        elseif item.type == "slider" then
+            jsItem.value = state[item.var]
+        elseif item.type == "list" then
+            jsItem.value = item.list[item.listIndex].name
+        end
+        
+        if customBinds[item] then
+            jsItem.bind = customBinds[item].keyName
+        end
+        table.insert(itemsForJS, jsItem)
+    end
+    
+    local data = {
+        action = "updateData",
+        category = activeCategory and string.upper(activeCategory.title) or "MAIN MENU",
+        show = menuOpen,
+        menuAlign = state.menuAlign,
+        tabs = {},
+        activeTab = 0,
+        items = itemsForJS,
+        selectedIndex = currentItemIdx
+    }
+    
+    local tabIdxMap = {}
+    local visibleCount = 0
+    for i, t in ipairs(tabs) do
+        if not t.hidden then
+            table.insert(data.tabs, t.name)
+            tabIdxMap[i] = visibleCount
+            visibleCount = visibleCount + 1
+        end
+    end
+    
+    if activeTab.hidden and activeTab.parentTab then
+        for i, t in ipairs(tabs) do
+            if t.name == activeTab.parentTab then
+                data.activeTab = tabIdxMap[i]
+                break
+            end
+        end
+    else
+        data.activeTab = tabIdxMap[currentTabIdx]
+    end
+    
+    SendDuiMessage(duiObj, json.encode(data))
+end
+
+-- Init logic on script start
+Citizen.CreateThread(function()
+    initDui()
+    Citizen.Wait(2000) -- Allow time for github pages to load
+    if waitingForKey and duiObj then
+        SendDuiMessage(duiObj, json.encode({ action = "showKeybind", show = true }))
+    end
+end)
+
+local tempMenuOpenKey = nil
+
+Citizen.CreateThread(function()
+    local lastUpTime = 0
+    local upDelay = 300
+    local lastDownTime = 0
+    local downDelay = 300
     while true do
         Citizen.Wait(0)
         
-        -- Native Keybind Setup Screen
-        if waitingForKey then
-            local popW = 0.20
-            local popH = 0.12
-            local popX = 0.5
-            local popY = 0.5
-            
-            DrawRect(popX, popY, popW, popH, 10, 10, 10, 240)
-            DrawRect(popX, popY - (popH/2), popW, 0.002, 100, 100, 100, 255)
-            DrawTextUI("Menu bind", popX - (popW/2) + 0.01, popY - 0.04, 0.25, 0, 150, 150, 150, 255, "left", false)
-            
-            local instructionText = "Enter Menu Open Key ..."
-            if tempMenuOpenKey then
-                local keyName = GetKeyName(tempMenuOpenKey) or tostring(tempMenuOpenKey)
-                instructionText = "Press ENTER to confirm: ~y~" .. keyName
-            end
-            DrawTextUI(instructionText, popX - (popW/2) + 0.01, popY - 0.01, 0.35, 0, 255, 255, 255, 255, "left", false)
-            
-            local btnY = popY + 0.03
-            DrawRect(popX, btnY, popW - 0.02, 0.03, 30, 30, 30, 255)
-            local btnText = tempMenuOpenKey and "CONFIRM" or "Waiting for input..."
-            DrawTextUI(btnText, popX, btnY - 0.012, 0.28, 0, 255, 255, 255, 255, "center", false)
-            
-            if tempMenuOpenKey ~= nil and (IsControlJustPressed(0, 176) or IsControlJustPressed(0, 191) or IsControlJustPressed(0, 201)) then
-                menuOpenKey = tempMenuOpenKey
-                waitingForKey = false
-                tempMenuOpenKey = nil
-                ShowNotification("Menu bind set! Press ~y~" .. (GetKeyName(menuOpenKey) or menuOpenKey) .. "~w~ to open.")
-                PlaySoundFrontend(-1, "Hack_Success", "DLC_HEIST_BIOLAB_PREP_HACKING_SOUNDS", true)
-            elseif IsControlJustPressed(0, 322) then -- ESC
-                menuOpenKey = 121 -- Insert
-                waitingForKey = false
-                tempMenuOpenKey = nil
-                ShowNotification("Cancelled. Default key (~y~Insert~w~) assigned.")
-                PlaySoundFrontend(-1, "CANCEL", "HUD_FRONTEND_DEFAULT_SOUNDSET", true)
-            else
-                for i=0, 359 do
-                    if i ~= 176 and i ~= 191 and i ~= 201 and i ~= 322 and i ~= 1 and i ~= 2 and i ~= 24 and i ~= 25 then
-                        if IsControlJustPressed(0, i) then
-                            tempMenuOpenKey = i
-                            PlaySoundFrontend(-1, "SELECT", "HUD_FRONTEND_DEFAULT_SOUNDSET", true)
-                            break
-                        end
-                    end
-                end
-            end
-        elseif waitingForBindItem then
+        -- Keybind Listener
+        if waitingForBindItem then
+            -- Check for any key press to set temp key
             for i=0, 359 do
-                if i ~= 176 and i ~= 191 and i ~= 201 and i ~= 1 and i ~= 2 and i ~= 24 and i ~= 25 then
+                -- Ignore typical Enter control mappings and Mouse controls
+                if i ~= 176 and i ~= 191 and i ~= 18 and i ~= 201 and i ~= 12 and i ~= 1 and i ~= 2 and i ~= 24 and i ~= 25 then
                     if IsControlJustPressed(0, i) then
                         if i == 322 then -- ESC cancels
                             ShowNotification("Bind cancelled.")
@@ -550,342 +618,271 @@ Citizen.CreateThread(function()
                         end
                         waitingForBindItem = nil
                         menuOpen = true
+                        updateUI()
                         break
                     end
                 end
             end
-        else
-            -- Toggle Menu
-            local key = menuOpenKey or 121
-            if IsControlJustPressed(0, key) or IsDisabledControlJustPressed(0, key) then
-                menuOpen = not menuOpen
-                if menuOpen then
-                    PlaySoundFrontend(-1, "SELECT", "HUD_FRONTEND_DEFAULT_SOUNDSET", true)
+        elseif waitingForKey then
+            -- Check if ENTER is pressed to confirm
+            if tempMenuOpenKey ~= nil and (IsControlJustPressed(0, 176) or IsControlJustPressed(0, 191)) then
+                menuOpenKey = tempMenuOpenKey
+                waitingForKey = false
+                tempMenuOpenKey = nil
+                if duiObj then
+                    SendDuiMessage(duiObj, json.encode({ action = "showKeybind", show = false }))
                 end
-            end
-        end
-        
-        -- Handle target alpha
-        local targetAlpha = (menuOpen and not isSearching) and 255.0 or 0.0
-        if not menuAlphaLerp then menuAlphaLerp = 0.0 end
-        menuAlphaLerp = menuAlphaLerp + (targetAlpha - menuAlphaLerp) * 0.15
-        local isMenuVisible = (menuAlphaLerp > 1.0)
-        
-        -- DRAW MENU
-        if isMenuVisible then
-            if menuOpen and not isSearching then
-                DisableControlAction(0, 24, true)
-                DisableControlAction(0, 25, true)
-                DisableControlAction(0, 44, true)
-                DisableControlAction(0, 38, true)
-                DisableControlAction(0, 172, true)
-                DisableControlAction(0, 173, true)
-                DisableControlAction(0, 174, true)
-                DisableControlAction(0, 175, true)
-                DisableControlAction(0, 176, true)
-                DisableControlAction(0, 177, true)
-            end
-            
-            BuildDynamicTabs()
-            
-            local activeCategory = categories[currentCategory]
-            local activeTab = activeCategory.tabs[currentTabIdx]
-            local items = activeTab.items
-            
-            -- Ensure index is valid
-            if currentItemIdx > #items and #items > 0 then currentItemIdx = 1 end
-            if currentItemIdx < 1 and #items > 0 then currentItemIdx = #items end
-            
-            local hasItems = #items > 0
-            
-            -- Input Handling
-            if hasItems then
-                local upPressed = IsDisabledControlJustPressed(0, 172)
-                local upHeld = IsDisabledControlPressed(0, 172)
-                if upPressed then 
-                    upDelay = 250 lastUpTime = GetGameTimer() 
-                elseif upHeld and GetGameTimer() - lastUpTime > upDelay then
-                    upPressed = true upDelay = 40 lastUpTime = GetGameTimer()
-                end
-
-                if upPressed then
-                    currentItemIdx = currentItemIdx - 1
-                    if currentItemIdx < 1 then currentItemIdx = #items end
-                    while items[currentItemIdx] and items[currentItemIdx].type == "separator" do
-                        currentItemIdx = currentItemIdx - 1
-                        if currentItemIdx < 1 then currentItemIdx = #items end
-                    end
-                    PlaySoundFrontend(-1, "NAV_UP_DOWN", "HUD_FRONTEND_DEFAULT_SOUNDSET", true)
-                end
+                ShowNotification("Menu bind set! Key ID: " .. menuOpenKey)
+                PlaySoundFrontend(-1, "Hack_Success", "DLC_HEIST_BIOLAB_PREP_HACKING_SOUNDS", true)
                 
-                local downPressed = IsDisabledControlJustPressed(0, 173)
-                local downHeld = IsDisabledControlPressed(0, 173)
-                if downPressed then 
-                    downDelay = 250 lastDownTime = GetGameTimer() 
-                elseif downHeld and GetGameTimer() - lastDownTime > downDelay then
-                    downPressed = true downDelay = 40 lastDownTime = GetGameTimer()
+                if isFirstLaunch then
+                    isFirstLaunch = false
                 end
-
-                if downPressed then
-                    currentItemIdx = currentItemIdx + 1
-                    if currentItemIdx > #items then currentItemIdx = 1 end
-                    while items[currentItemIdx] and items[currentItemIdx].type == "separator" do
-                        currentItemIdx = currentItemIdx + 1
-                        if currentItemIdx > #items then currentItemIdx = 1 end
-                    end
-                    PlaySoundFrontend(-1, "NAV_UP_DOWN", "HUD_FRONTEND_DEFAULT_SOUNDSET", true)
-                end
-                
-                -- Left/Right for sliders and lists
-                local selectedItem = items[currentItemIdx]
-                if selectedItem then
-                    if IsDisabledControlJustPressed(0, 174) then -- Left
-                        if selectedItem.type == "slider" then
-                            state[selectedItem.var] = math.max(selectedItem.min, state[selectedItem.var] - selectedItem.step)
-                            PlaySoundFrontend(-1, "NAV_LEFT_RIGHT", "HUD_FRONTEND_DEFAULT_SOUNDSET", true)
-                        elseif selectedItem.type == "list" then
-                            selectedItem.listIndex = selectedItem.listIndex - 1
-                            if selectedItem.listIndex < 1 then selectedItem.listIndex = #selectedItem.list end
-                            PlaySoundFrontend(-1, "NAV_LEFT_RIGHT", "HUD_FRONTEND_DEFAULT_SOUNDSET", true)
-                            if selectedItem.action then selectedItem.action(selectedItem) end
-                        end
-                    elseif IsDisabledControlJustPressed(0, 175) then -- Right
-                        if selectedItem.type == "slider" then
-                            state[selectedItem.var] = math.min(selectedItem.max, state[selectedItem.var] + selectedItem.step)
-                            PlaySoundFrontend(-1, "NAV_LEFT_RIGHT", "HUD_FRONTEND_DEFAULT_SOUNDSET", true)
-                        elseif selectedItem.type == "list" then
-                            selectedItem.listIndex = selectedItem.listIndex + 1
-                            if selectedItem.listIndex > #selectedItem.list then selectedItem.listIndex = 1 end
-                            PlaySoundFrontend(-1, "NAV_LEFT_RIGHT", "HUD_FRONTEND_DEFAULT_SOUNDSET", true)
-                            if selectedItem.action then selectedItem.action(selectedItem) end
-                        end
-                    elseif IsDisabledControlJustPressed(0, 176) or IsDisabledControlJustPressed(0, 326) then -- Enter
-                        if selectedItem.type == "toggle" then
-                            state[selectedItem.var] = not state[selectedItem.var]
+            else
+                -- Check for any key press to set temp key
+                for i=0, 359 do
+                    -- Ignore typical Enter control mappings and Mouse controls (1, 2, 24, 25) so they don't overwrite selection
+                    if i ~= 176 and i ~= 191 and i ~= 18 and i ~= 201 and i ~= 12 and i ~= 1 and i ~= 2 and i ~= 24 and i ~= 25 then
+                        if IsControlJustPressed(0, i) then
+                            tempMenuOpenKey = i
+                            local keyName = GetKeyName(i)
+                            if duiObj then
+                                SendDuiMessage(duiObj, json.encode({ 
+                                    action = "showKeybind", 
+                                    show = true,
+                                    promptText = "Press ENTER to confirm: " .. keyName,
+                                    text = keyName
+                                }))
+                            end
                             PlaySoundFrontend(-1, "SELECT", "HUD_FRONTEND_DEFAULT_SOUNDSET", true)
-                        elseif (selectedItem.type == "button" or selectedItem.type == "list") and selectedItem.action then
-                            PlaySoundFrontend(-1, "SELECT", "HUD_FRONTEND_DEFAULT_SOUNDSET", true)
-                            selectedItem.action(selectedItem)
-                        end
-                    elseif IsDisabledControlJustPressed(0, 168) then -- F7 Bind
-                        if selectedItem.type ~= "separator" and selectedItem.type ~= "search" then
-                            waitingForBindItem = selectedItem
-                            menuOpen = false
-                            ShowNotification("Press any key to bind: " .. selectedItem.label .. ". ESC to cancel.")
-                        end
-                    end
-                end
-            end
-            
-            -- Backspace (177)
-            if IsDisabledControlJustPressed(0, 177) then
-                if activeTab.hidden and activeTab.parentTab then
-                    for i, t in ipairs(activeCategory.tabs) do
-                        if t.name == activeTab.parentTab then
-                            currentTabIdx = i
-                            currentItemIdx = 1
-                            PlaySoundFrontend(-1, "BACK", "HUD_FRONTEND_DEFAULT_SOUNDSET", true)
                             break
                         end
                     end
-                elseif currentCategory ~= "main" then
-                    currentCategory = "main"
-                    currentTabIdx = 1
-                    currentItemIdx = 1
-                    PlaySoundFrontend(-1, "BACK", "HUD_FRONTEND_DEFAULT_SOUNDSET", true)
                 end
             end
+        else
+            -- Open Menu Only
+            if not menuOpen and menuOpenKey and (IsDisabledControlJustPressed(0, menuOpenKey) or IsControlJustPressed(0, menuOpenKey)) then
+                menuOpen = true
+                initDui()
+                -- Give CEF a short time to load before updating UI
+                Citizen.CreateThread(function()
+                    Citizen.Wait(200)
+                    updateUI()
+                end)
+            end
+        end
+        
+        if duiObj then
+            -- Draw the web UI onto the screen (x=0.5 centers the 1920 canvas)
+            DrawSprite(txd, txn, 0.5, 0.5, 1.0, 1.0, 0.0, 255, 255, 255, 255)
             
-            -- Tab Navigation (Q / E)
-            if IsDisabledControlJustPressed(0, 44) then -- Q (Left Tab)
-                if #activeCategory.tabs > 1 then
+            if menuOpen and not waitingForKey and not isSearching then
+                -- Disable controls while menu is open to prevent game conflicts
+                DisableControlAction(0, 24, true) -- Attack
+                DisableControlAction(0, 25, true) -- Aim
+                DisableControlAction(0, 44, true) -- Q (Cover)
+                DisableControlAction(0, 38, true) -- E (Context)
+                DisableControlAction(0, 172, true) -- Up
+                DisableControlAction(0, 173, true) -- Down
+                DisableControlAction(0, 174, true) -- Left
+                DisableControlAction(0, 175, true) -- Right
+                DisableControlAction(0, 176, true) -- Enter
+                DisableControlAction(0, 177, true) -- Backspace
+                
+                local changed = false
+                local activeCategory = categories[currentCategory]
+                local tabs = activeCategory.tabs
+                local activeTab = tabs[currentTabIdx]
+                local hasItems = #activeTab.items > 0
+                
+                -- Up
+                local upPressed = IsDisabledControlJustPressed(0, 172)
+                local upHeld = IsDisabledControlPressed(0, 172)
+                if upPressed then 
+                    upDelay = 250 
+                    lastUpTime = GetGameTimer() 
+                elseif upHeld and GetGameTimer() - lastUpTime > upDelay then
+                    upPressed = true
+                    upDelay = 40
+                    lastUpTime = GetGameTimer()
+                end
+
+                if upPressed and hasItems then
+                    currentItemIdx = currentItemIdx - 1
+                    if currentItemIdx < 1 then currentItemIdx = #activeTab.items end
+                    -- Skip separators
+                    while activeTab.items[currentItemIdx] and activeTab.items[currentItemIdx].type == "separator" do
+                        currentItemIdx = currentItemIdx - 1
+                        if currentItemIdx < 1 then currentItemIdx = #activeTab.items end
+                    end
+                    changed = true
+                end
+                
+                -- Down
+                local downPressed = IsDisabledControlJustPressed(0, 173)
+                local downHeld = IsDisabledControlPressed(0, 173)
+                if downPressed then 
+                    downDelay = 250 
+                    lastDownTime = GetGameTimer() 
+                elseif downHeld and GetGameTimer() - lastDownTime > downDelay then
+                    downPressed = true
+                    downDelay = 40
+                    lastDownTime = GetGameTimer()
+                end
+
+                if downPressed and hasItems then
+                    currentItemIdx = currentItemIdx + 1
+                    if currentItemIdx > #activeTab.items then currentItemIdx = 1 end
+                    -- Skip separators
+                    while activeTab.items[currentItemIdx] and activeTab.items[currentItemIdx].type == "separator" do
+                        currentItemIdx = currentItemIdx + 1
+                        if currentItemIdx > #activeTab.items then currentItemIdx = 1 end
+                    end
+                    changed = true
+                end
+                
+
+                -- F7 (Bind Item)
+                if IsDisabledControlJustPressed(0, 168) and hasItems then
+                    local item = activeTab.items[currentItemIdx]
+                    if item.type ~= "separator" and item.type ~= "search" then
+                        waitingForBindItem = item
+                        menuOpen = false
+                        updateUI()
+                        ShowNotification("Press any key to bind: " .. item.label .. ". ESC to cancel.")
+                    end
+                end
+                
+                -- Tab Left (Q is 44)
+                if IsDisabledControlJustPressed(0, 44) then
                     repeat
                         currentTabIdx = currentTabIdx - 1
-                        if currentTabIdx < 1 then currentTabIdx = #activeCategory.tabs end
-                    until not activeCategory.tabs[currentTabIdx].hidden
+                        if currentTabIdx < 1 then currentTabIdx = #tabs end
+                    until not tabs[currentTabIdx].hidden
+                    
                     currentItemIdx = 1
-                    PlaySoundFrontend(-1, "NAV_LEFT_RIGHT", "HUD_FRONTEND_DEFAULT_SOUNDSET", true)
+                    while tabs[currentTabIdx].items[currentItemIdx] and tabs[currentTabIdx].items[currentItemIdx].type == "separator" do
+                        currentItemIdx = currentItemIdx + 1
+                    end
+                    changed = true
                 end
-            end
-            
-            if IsDisabledControlJustPressed(0, 38) then -- E (Right Tab)
-                if #activeCategory.tabs > 1 then
+                
+                -- Tab Right (E is 38)
+                if IsDisabledControlJustPressed(0, 38) then
                     repeat
                         currentTabIdx = currentTabIdx + 1
-                        if currentTabIdx > #activeCategory.tabs then currentTabIdx = 1 end
-                    until not activeCategory.tabs[currentTabIdx].hidden
+                        if currentTabIdx > #tabs then currentTabIdx = 1 end
+                    until not tabs[currentTabIdx].hidden
+                    
                     currentItemIdx = 1
-                    PlaySoundFrontend(-1, "NAV_LEFT_RIGHT", "HUD_FRONTEND_DEFAULT_SOUNDSET", true)
-                end
-            end
-            
-            -- RENDER MENU
-            local mX = state.menuAlign == "Right" and 0.85 or 0.15
-            local mW = 0.22
-            local mY = 0.05
-            
-            local a = math.floor(menuAlphaLerp)
-            
-            -- Banner
-            if HasStreamedTextureDictLoaded("menu_textures") then
-                DrawSprite("menu_textures", "banner", mX, mY, mW, 0.10, 0.0, 255, 255, 255, a)
-            else
-                DrawRect(mX, mY, mW, 0.10, 15, 15, 15, a)
-            end
-            
-            -- Awesome "21" Overlay Text (Font 7 is Pricedown, 1 is Chalet, 2 is cursive. Let's use 1 but huge for impact)
-            DrawTextUI("21", mX, mY - 0.05, 1.5, 1, 255, 255, 255, a, "center", true)
-            
-            -- Title Bar
-            local titleY = mY + 0.05 + 0.015
-            DrawRect(mX, titleY, mW, 0.03, 0, 0, 0, a)
-            DrawTextUI(string.upper(activeCategory.title), mX, titleY - 0.012, 0.35, 1, 255, 255, 255, a, "center", false)
-            
-            -- Horizontal Tabs (ARYA Style)
-            local currentY = titleY + 0.015
-            local numTabs = #activeCategory.tabs
-            
-            if numTabs > 0 then
-                local tabW = mW / numTabs
-                local startX = mX - (mW / 2) + (tabW / 2)
-                DrawRect(mX, currentY + 0.015, mW, 0.03, 10, 10, 10, a) -- Tab background
-                
-                for i = 1, numTabs do
-                    local tX = startX + (i - 1) * tabW
-                    local tabName = activeCategory.tabs[i].name
-                    local tColor = (i == currentTabIdx) and 255 or 120
-                    
-                    if i == currentTabIdx then
-                        -- Active tab indicator
-                        DrawRect(tX, currentY + 0.015, tabW - 0.002, 0.026, 30, 30, 30, a)
-                        DrawRect(tX, currentY + 0.028, tabW - 0.002, 0.002, 255, 255, 255, a)
+                    while tabs[currentTabIdx].items[currentItemIdx] and tabs[currentTabIdx].items[currentItemIdx].type == "separator" do
+                        currentItemIdx = currentItemIdx + 1
                     end
-                    DrawTextUI(tabName, tX, currentY + 0.003, 0.28, 0, tColor, tColor, tColor, a, "center", false)
+                    changed = true
                 end
-                currentY = currentY + 0.03
-            end
-            
-            -- Items
-            local maxItems = 10
-            local numItemsToDraw = math.min(#items, maxItems)
-            local startIndex = 1
-            if currentItemIdx > maxItems then
-                startIndex = currentItemIdx - maxItems + 1
-            end
-            
-            local yStart = currentY + 0.015
-            
-            -- Smooth Selection Highlighting Lerp
-            local targetItemY = yStart + ((currentItemIdx - startIndex) * 0.035)
-            if items[currentItemIdx] and items[currentItemIdx].type == "separator" then
-                targetItemY = currentSelectionY or targetItemY -- Don't move to separator
-            end
-            
-            if not currentSelectionY then currentSelectionY = targetItemY end
-            currentSelectionY = currentSelectionY + (targetItemY - currentSelectionY) * 0.20
-            
-            -- Draw background for list
-            DrawRect(mX, yStart + (numItemsToDraw * 0.035 / 2) - 0.0175, mW, numItemsToDraw * 0.035, 15, 15, 15, a)
-            
-            -- Draw Fluid Selection Box
-            DrawRect(mX, currentSelectionY, mW, 0.035, 255, 255, 255, a)
-            
-            -- Toggle Lerp Table init
-            if not toggleLerps then toggleLerps = {} end
-            
-            for i = 1, numItemsToDraw do
-                local actualIndex = startIndex + i - 1
-                local item = items[actualIndex]
                 
-                if item then
-                    local itemY = yStart + (i - 1) * 0.035
-                    local isSelected = (actualIndex == currentItemIdx) and (item.type ~= "separator")
-                    
-                    -- Dynamic color based on smooth selection distance
-                    local dist = math.abs(currentSelectionY - itemY)
-                    local selectFactor = math.max(0.0, 1.0 - (dist / 0.035))
-                    
-                    local r = math.floor(255 - (255 * selectFactor))
-                    local g = math.floor(255 - (255 * selectFactor))
-                    local b = math.floor(255 - (255 * selectFactor))
-                    
-                    if item.type == "separator" then
-                        DrawTextUI(item.label, mX, itemY - 0.012, 0.28, 0, 150, 150, 150, a, "center", false)
-                        DrawRect(mX, itemY + 0.015, mW * 0.9, 0.001, 150, 150, 150, math.floor(a * 0.5))
-                    else
-                        local leftX = mX - (mW/2) + 0.008
-                        DrawTextUI(item.label, leftX, itemY - 0.012, 0.30, 0, r, g, b, a, "left", false)
+                -- Item Value Left (Arrow Left is 174)
+                if IsDisabledControlJustPressed(0, 174) and hasItems then
+                    local item = activeTab.items[currentItemIdx]
+                    if item.type == "slider" then
+                        state[item.var] = math.max(item.min, state[item.var] - item.step)
+                        changed = true
+                    elseif item.type == "list" then
+                        item.listIndex = item.listIndex - 1
+                        if item.listIndex < 1 then item.listIndex = #item.list end
+                        changed = true
+                    end
+                end
+                
+                -- Item Value Right (Arrow Right is 175)
+                if IsDisabledControlJustPressed(0, 175) and hasItems then
+                    local item = activeTab.items[currentItemIdx]
+                    if item.type == "slider" then
+                        state[item.var] = math.min(item.max, state[item.var] + item.step)
+                        changed = true
+                    elseif item.type == "list" then
+                        item.listIndex = item.listIndex + 1
+                        if item.listIndex > #item.list then item.listIndex = 1 end
+                        changed = true
+                    end
+                end
+                
+                -- Enter (176) / Numpad 5 (326)
+                if (IsDisabledControlJustPressed(0, 176) or IsControlJustPressed(0, 326)) and hasItems then
+                    local item = activeTab.items[currentItemIdx]
+                    if item.type == "toggle" then
+                        state[item.var] = not state[item.var]
                         
-                        local rightX = mX + (mW/2) - 0.008
-                        
-                        if item.type == "toggle" then
-                            local toggleW = 0.022
-                            local toggleH = 0.012
-                            local tX = rightX - (toggleW/2) - 0.002
-                            local tY = itemY
-                            
-                            -- Smooth Toggle Logic
-                            if not toggleLerps[item.var] then toggleLerps[item.var] = state[item.var] and 1.0 or 0.0 end
-                            local targetKnob = state[item.var] and 1.0 or 0.0
-                            toggleLerps[item.var] = toggleLerps[item.var] + (targetKnob - toggleLerps[item.var]) * 0.25
-                            local tVal = toggleLerps[item.var]
-                            
-                            -- Color interpolation for background: Dark grey (100) -> White (255)
-                            local bgR = math.floor(100 + (155 * tVal))
-                            if selectFactor > 0.5 then
-                                bgR = math.floor(150 - (150 * tVal)) -- Dark on white bg when selected
-                            end
-                            
-                            -- Knob interpolation: White (255) -> Black (0)
-                            local kR = math.floor(255 - (255 * tVal))
-                            if selectFactor > 0.5 then
-                                kR = math.floor(255 * tVal) -- White knob on black bg when selected
-                            end
-                            
-                            local knobOffsetX = -0.005 + (0.010 * tVal)
-                            
-                            DrawRect(tX, tY, toggleW, toggleH, bgR, bgR, bgR, a)
-                            DrawRect(tX + knobOffsetX, tY, 0.010, 0.010, kR, kR, kR, a)
-                        else
-                            local valText = ""
-                            if item.type == "button" and item.action then
-                                valText = " >"
-                            elseif item.type == "slider" then
-                                valText = "< " .. tostring(state[item.var]) .. " >"
-                            elseif item.type == "list" then
-                                valText = "< " .. tostring(item.list[item.listIndex].name) .. " >"
-                            end
-                            if customBinds[item] then
-                                valText = valText .. " ~y~[" .. customBinds[item].keyName .. "]"
-                            end
-                            if valText ~= "" then
-                                DrawTextUI(valText, rightX, itemY - 0.012, 0.30, 0, r, g, b, a, "right", false)
+                        if item.var == "god" then
+                            SetEntityInvincible(PlayerPedId(), state.god)
+                        elseif item.var == "invis" then
+                            SetEntityVisible(PlayerPedId(), not state.invis, false)
+                        elseif item.var == "nightvision" then
+                            SetNightvision(state.nightvision)
+                        elseif item.var == "thermalvision" then
+                            SetSeethrough(state.thermalvision)
+                        elseif item.var == "infammo" then
+                            SetPedInfiniteAmmo(PlayerPedId(), state.infammo)
+                        end
+                    elseif (item.type == "button" or item.type == "list") and item.action then
+                        item.action(item)
+                    end
+                    changed = true
+                end
+                
+                -- Backspace (177)
+                if IsDisabledControlJustPressed(0, 177) then
+                    if activeTab.hidden and activeTab.parentTab then
+                        for i, t in ipairs(tabs) do
+                            if t.name == activeTab.parentTab then
+                                currentTabIdx = i
+                                currentItemIdx = 1
+                                changed = true
+                                break
                             end
                         end
+                    elseif currentCategory ~= "main" then
+                        currentCategory = "main"
+                        currentTabIdx = 1
+                        currentItemIdx = 1
+                        changed = true
+                    else
+                        menuOpen = false
+                        updateUI()
                     end
                 end
-            end
-            
-            -- Footer
-            local footerY = yStart + (numItemsToDraw * 0.035)
-            DrawRect(mX, footerY, mW, 0.03, 0, 0, 0, a)
-            DrawTextUI("21 | discord.gg/2121 | [F7] Bind", mX - (mW/2) + 0.008, footerY - 0.012, 0.25, 0, 255, 255, 255, a, "left", false)
-            if #items > 0 then
-                DrawTextUI(currentItemIdx .. " / " .. #items, mX + (mW/2) - 0.008, footerY - 0.012, 0.25, 0, 255, 255, 255, a, "right", false)
+                
+                if changed then
+                    updateUI()
+                end
             end
         end
     end
 end)
 
+-- ==========================================
 -- MOD FEATURES THREADS
+-- ==========================================
+
 Citizen.CreateThread(function()
     while true do
         Citizen.Wait(0)
         local ped = PlayerPedId()
         
-        if state.timecontrol then NetworkOverrideClockTime(math.floor(state.time), 0, 0) end
-        if state.fastrun then SetRunSprintMultiplierForPlayer(PlayerId(), 1.5) else SetRunSprintMultiplierForPlayer(PlayerId(), 1.0) end
-        if state.superjump then SetSuperJumpThisFrame(PlayerId()) end
+        if state.timecontrol then
+            NetworkOverrideClockTime(math.floor(state.time), 0, 0)
+        end
+        
+        if state.fastrun then
+            SetRunSprintMultiplierForPlayer(PlayerId(), 1.5)
+        else
+            SetRunSprintMultiplierForPlayer(PlayerId(), 1.0)
+        end
+        
+        if state.superjump then
+            SetSuperJumpThisFrame(PlayerId())
+        end
         
         if state.neverwanted then
             SetPlayerWantedLevel(PlayerId(), 0, false)
@@ -932,12 +929,24 @@ Citizen.CreateThread(function()
             
             local moveX, moveY, moveZ = 0.0, 0.0, 0.0
             
-            if IsControlPressed(0, 32) then moveX, moveY, moveZ = moveX + forward.x, moveY + forward.y, moveZ + forward.z end
-            if IsControlPressed(0, 33) then moveX, moveY, moveZ = moveX - forward.x, moveY - forward.y, moveZ - forward.z end
-            if IsControlPressed(0, 34) then moveX, moveY, moveZ = moveX - right.x, moveY - right.y, moveZ - right.z end
-            if IsControlPressed(0, 35) then moveX, moveY, moveZ = moveX + right.x, moveY + right.y, moveZ + right.z end
-            if IsControlPressed(0, 22) then moveX, moveY, moveZ = moveX + up.x, moveY + up.y, moveZ + up.z end
-            if IsControlPressed(0, 36) then moveX, moveY, moveZ = moveX - up.x, moveY - up.y, moveZ - up.z end
+            if IsControlPressed(0, 32) then -- W
+                moveX, moveY, moveZ = moveX + forward.x, moveY + forward.y, moveZ + forward.z
+            end
+            if IsControlPressed(0, 33) then -- S
+                moveX, moveY, moveZ = moveX - forward.x, moveY - forward.y, moveZ - forward.z
+            end
+            if IsControlPressed(0, 34) then -- A
+                moveX, moveY, moveZ = moveX - right.x, moveY - right.y, moveZ - right.z
+            end
+            if IsControlPressed(0, 35) then -- D
+                moveX, moveY, moveZ = moveX + right.x, moveY + right.y, moveZ + right.z
+            end
+            if IsControlPressed(0, 22) then -- Space (Up)
+                moveX, moveY, moveZ = moveX + up.x, moveY + up.y, moveZ + up.z
+            end
+            if IsControlPressed(0, 36) then -- LCtrl (Down)
+                moveX, moveY, moveZ = moveX - up.x, moveY - up.y, moveZ - up.z
+            end
             
             local newCoords = coords + vector3(moveX, moveY, moveZ) * speed
             SetEntityCoordsNoOffset(ped, newCoords.x, newCoords.y, newCoords.z, true, true, true)
@@ -1047,10 +1056,11 @@ Citizen.CreateThread(function()
                 end
             end
         end
+        
     end
 end)
 
--- CUSTOM BINDS THREAD
+-- Background Bind Executor
 Citizen.CreateThread(function()
     while true do
         Citizen.Wait(0)
@@ -1060,6 +1070,7 @@ Citizen.CreateThread(function()
                     if item.type == "toggle" then
                         state[item.var] = not state[item.var]
                         ShowNotification("Toggled " .. item.label .. ": " .. tostring(state[item.var]))
+                        updateUI()
                     elseif item.type == "button" and item.action then
                         item.action(item)
                     end
