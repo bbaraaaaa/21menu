@@ -103,8 +103,8 @@ body {
 ========================================= */
 #menu-container {
     position: absolute;
-    top: 50px;
-    left: 50px;
+    top: 150px;
+    left: 20px;
     width: var(--menu-width);
     /* Very dark almost solid navy to match ARYA/21 opaque look */
     background-color: rgba(10, 15, 29, 0.98); 
