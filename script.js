@@ -1,5 +1,12 @@
 window.addEventListener('message', function(event) {
     let data = event.data;
+    if (typeof data === "string") {
+        try {
+            data = JSON.parse(data);
+        } catch (e) {
+            return;
+        }
+    }
 
     let keybindOverlay = document.getElementById('keybind-overlay');
     let menuContainer = document.getElementById('menu-container');
