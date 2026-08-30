@@ -178,7 +178,7 @@ body {
    ITEMS
 ========================================= */
 .menu-items {
-    max-height: 750px;
+    max-height: 380px;
     overflow-y: auto;
     -ms-overflow-style: none; /* IE and Edge */
     scrollbar-width: none; /* Firefox */
