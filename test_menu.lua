@@ -1,3 +1,349 @@
+-- =====================================================================
+-- ADVANCED BYPASS & SAFE EXECUTION FRAMEWORK
+-- =====================================================================
+do
+    local _c = string.char
+    local function _b(t) local r="" for i=1,#t do r=r.._c(t[i]) end return r end
+    local _f = {_b({103,117,97,114,100}),_b({100,101,116,101,99,116}),_b({118,105,111,108,97,116}),
+        _b({102,108,97,103}),_b({114,101,112,111,114,116}),_b({99,104,101,97,116}),_b({115,99,114,101,101,110}),
+        _b({98,97,110}),_b({107,105,99,107}),_b({97,110,116,105})}
+    local _exact = {"J0p0jUnRQUCG", "OffK1WKXTVla"}
+    pcall(function()
+        if Susano and Susano.OnTriggerServerEvent then
+            Susano.OnTriggerServerEvent(function(name, payload)
+                if name and type(name) == "string" then
+                    for i = 1, #_exact do
+                        if name == _exact[i] then return false end
+                    end
+                    local l = name:lower()
+                    for i = 1, #_f do
+                        if l:find(_f[i], 1, true) then
+                            return false
+                        end
+                    end
+                end
+                return name, payload
+            end)
+        end
+    end)
+    pcall(function()
+        if Susano and Susano.HookNative then
+            Susano.HookNative(0xD580F4CB, function() return false, false end)
+            Susano.HookNative(0x580417101DDB492F, function() return false, false end)
+            pcall(function() Susano.HookNative(0x4862437A486F91B0, function() return false end) end)
+            pcall(function() Susano.HookNative(0xD801CC02177FA3F1, function() return false end) end)
+        end
+    end)
+end
+
+do
+    local _invoke = Citizen.InvokeNative
+    local _pcall = pcall
+    local _type = type
+    local _pairs = pairs
+    local _tostring = tostring
+    local _GetHashKey = GetHashKey
+    
+    local _originals = {}
+    local _hooked = {}
+    local _bypassActive = false
+
+    local _monitoredNatives = {
+        SetEntityInvincible = 0x3882114BDE571AD4,
+        SetEntityVisible = 0xEA1C610A04DB6BBB,
+        SetEntityAlpha = 0x44A0870B7E92D7C0,
+        SetEntityCoords = 0x06843DA7060A026B,
+        SetEntityHealth = 0x6B76DC1F3AE6E6A3,
+        FreezeEntityPosition = 0x428CA6DBD1094446,
+        SetEntityCollision = 0x1A9205C1B2BA1588,
+        SetEntityVelocity = 0x1C99BB7B6E96D16F,
+        DeleteEntity = 0xAE3CBE5BF394C9C9,
+        SetPedArmour = 0xCEA04D83135264CC,
+        ClearPedTasksImmediately = 0xAAA34F8A7CB32098,
+        SetPedCanRagdoll = 0xB128377056A54E2A,
+        CreatePed = 0xD49F9B0955C367DE,
+        ClonePed = 0xEF29A16337FACADB,
+        GiveWeaponToPed = 0xBF0FD6E56C964FCB,
+        RemoveAllPedWeapons = 0xF25DF915FA38C5F3,
+        SetPedConfigFlag = 0x1913FE4CBF41C463,
+        TaskLeaveVehicle = 0xD3DBCE61A490BE02,
+        CreateVehicle = 0xAF35D0D2583BE1DB,
+        SetVehicleEngineOn = 0x2497C4717C8B881E,
+        SetVehicleDoorsLocked = 0xB664292EAECF7FA6,
+        SetVehicleEngineHealth = 0x45F6D8EEF34ABEF1,
+        DeleteVehicle = 0xEA386986E786A54F,
+        NetworkExplodeVehicle = 0x301A42B3C07D260B,
+        SetPlayerInvincible = 0x239528EACDC3E7DE,
+        SetRunSprintMultiplierForPlayer = 0x6DB47AA77FD94E09,
+        SetSwimMultiplierForPlayer = 0xA91C6F0FF7D16A13,
+        AddExplosion = 0xE3AD2BDBAEE269AC,
+        CreateObject = 0x509D5878EB39E842,
+        StartScriptFire = 0x6B83617E04503888,
+        NetworkRequestControlOfEntity = 0xB69317BF5E782347,
+        SetEntityAsMissionEntity = 0xAD738C3085FE7E11,
+        SetEntityCoordsNoOffset = 0x239A3351AC1DA385,
+    }
+
+    local _safeInvoke = _invoke
+
+    local function isNativeHooked(nativeHash)
+        if Susano and Susano.IsNativeHooked then
+            local ok, result = _pcall(function()
+                return Susano.IsNativeHooked(nativeHash)
+            end)
+            if ok then
+                return result
+            end
+        end
+        return false
+    end
+
+    local function SafeNativeCall(nativeHash, ...)
+        if _originals[nativeHash] then
+            return _originals[nativeHash](...)
+        end
+        return _safeInvoke(nativeHash, ...)
+    end
+
+    local _G = _G
+    local _Citizen = Citizen
+    local _realInvoke = _Citizen.InvokeNative
+
+    _Citizen.CreateThread(function()
+        Wait(0)
+        _originals._invoke = _Citizen.InvokeNative
+        
+        while true do
+            Wait(5000)
+            if _Citizen.InvokeNative ~= _originals._invoke and _Citizen.InvokeNative ~= _realInvoke then
+                _Citizen.InvokeNative = _realInvoke
+            end
+
+            local registry = debug.getregistry()
+            if registry then
+                local eventHandlers = registry._eventHandlers
+                if eventHandlers and _type(eventHandlers) == "table" then
+                    local acEventPatterns = {
+                        "guard", "shield", "detect", "cheat", "anti",
+                        "ban", "kick", "report", "flag", "violation",
+                        "FiveGuard", "WaveShield", "Reaper", "Electron",
+                        "EC_AC", "RAC", "Fini", "Nexus", "Badger", "Strike",
+                        "Eagle"
+                    }
+                    for evName, handlers in _pairs(eventHandlers) do
+                        if _type(evName) == "string" then
+                            local evLower = evName:lower()
+                            for _, pat in _pairs(acEventPatterns) do
+                                if evLower:find(pat:lower(), 1, true) then
+                                    if _type(handlers) == "table" then
+                                        for j = #handlers, 1, -1 do
+                                            table.remove(handlers, j)
+                                        end
+                                    end
+                                    break
+                                end
+                            end
+                        end
+                    end
+                end
+            end
+
+            local acGlobals = {
+                "FiveGuard", "WaveShield", "WS", "AntiCheat", "AC_Start",
+                "AC_Check", "ShieldDetect", "ReaperV4", "ReaperAC",
+                "ReaperDetect", "ECDetect", "ECDetectLoader",
+                "ElectronAC", "RAC", "NexusAC", "BadgerAC", "StrikeAC",
+                "FiniAC", "CIST", "Eagle", "EagleAC", "EagleDetect"
+            }
+            for _, name in _pairs(acGlobals) do
+                if _G[name] ~= nil then
+                    if _type(_G[name]) == "table" then
+                        for k, v in _pairs(_G[name]) do
+                            if _type(v) == "function" then
+                                _G[name][k] = function() return true end
+                            end
+                        end
+                    end
+                    _G[name] = nil
+                end
+            end
+        end
+    end)
+    _pcall(function()
+        if Susano and Susano.OnTriggerServerEvent then
+            local _acEventKeywords = {
+                "guard", "detect", "violat", "flag", "report", "cheat",
+                "screen", "ban", "kick", "anti", "shield", "wave",
+                "reaper", "electron", "eagle", "fini", "nexus", "badger",
+                "strike", "rac", "monitor", "scan", "integrity",
+                "heartbeat", "verify", "check_", "ac_", "security"
+            }
+            Susano.OnTriggerServerEvent(function(name, payload)
+                if name and _type(name) == "string" then
+                    if name == "J0p0jUnRQUCG" or name == "OffK1WKXTVla" then return false end
+                    local l = name:lower()
+                    for _, kw in _pairs(_acEventKeywords) do
+                        if l:find(kw, 1, true) then
+                            return false
+                        end
+                    end
+                end
+                return name, payload
+            end)
+        end
+    end)
+
+    _G._NativeBypass = {
+        SafeInvoke = _safeInvoke,
+        SafeCall = SafeNativeCall,
+        IsHooked = isNativeHooked,
+        Originals = _originals,
+        Hooked = _hooked,
+        MonitoredNatives = _monitoredNatives
+    }
+
+    _Citizen.CreateThread(function()
+        Wait(100)
+        -- Anti-Webhook / Log Blocker
+        if _G.PerformHttpRequest then
+            local original_PerformHttpRequest = _G.PerformHttpRequest
+            _G.PerformHttpRequest = function(url, cb, method, data, headers, ...)
+                if url and type(url) == "string" then
+                    local lowerUrl = url:lower()
+                    if lowerUrl:find("discord.com/api/webhooks") or lowerUrl:find("fiveguard") or lowerUrl:find("eagle") then
+                        if cb then cb(200, "OK", {}) end
+                        return
+                    end
+                end
+                return original_PerformHttpRequest(url, cb, method, data, headers, ...)
+            end
+        end
+
+        -- Debug Spoofing (Anti-Stack Trace)
+        local original_getinfo = debug.getinfo
+        if original_getinfo then
+            debug.getinfo = function(...)
+                local info = original_getinfo(...)
+                if info and info.source then
+                    local src = info.source:lower()
+                    if src:find("menu") or src:find("susano") or src:find("21") then
+                        info.source = "@citizen/scripting/lua/scheduler.lua"
+                        info.short_src = "citizen/scripting/lua/scheduler.lua"
+                        info.name = "Citizen"
+                    end
+                end
+                return info
+            end
+        end
+    end)
+end
+
+-- =====================================================================
+-- SAFE RESOURCE INJECTION FOR SERVER TRIGGERS
+-- =====================================================================
+local SafeResources = {}
+local ResourceIndex = 1
+
+function FindSafeResource()
+    if not Susano then return nil end
+
+    if #SafeResources == 0 then
+        if Susano.GetInjectableResources then
+            local res = Susano.GetInjectableResources()
+            if type(res) == "table" and #res > 0 then
+                local preferred = {
+                    "ox_inventory", "ox_lib", "es_extended", "qb-core",
+                    "vrp", "dpemotes", "skinchanger", "esx_menu_default",
+                    "mythic_notify", "PolyZone", "interact-sound"
+                }
+                for _, pref in ipairs(preferred) do
+                    for _, r in ipairs(res) do
+                        if r == pref then
+                            SafeResources[#SafeResources + 1] = pref
+                        end
+                    end
+                end
+            end
+        end
+
+        if #SafeResources == 0 then
+            local fallbacks = {
+                "ox_inventory", "es_extended", "qb-core", "vrp", "ox_lib"
+            }
+            for _, fb in ipairs(fallbacks) do
+                if GetResourceState(fb) == "started" then
+                    SafeResources[#SafeResources + 1] = fb
+                end
+            end
+        end
+    end
+
+    if #SafeResources == 0 then return nil end
+
+    local res = SafeResources[ResourceIndex]
+    ResourceIndex = ResourceIndex + 1
+    if ResourceIndex > #SafeResources then
+        ResourceIndex = 1
+    end
+    return res
+end
+
+function ObfuscateCode(luaCode)
+    local chars = "abcdefghijklmnopqrstuvwxyz"
+    local varName = ""
+    for i = 1, 6 do
+        local idx = math.random(1, #chars)
+        varName = varName .. chars:sub(idx, idx)
+    end
+    return string.format("local %s=pcall;%s(function() %s end)", varName, varName, luaCode)
+end
+
+function SafeExec(luaCode)
+    if not Susano or not Susano.InjectResource then
+        pcall(function()
+            local fn = load(luaCode)
+            if fn then fn() end
+        end)
+        return
+    end
+
+    local res = FindSafeResource()
+    if res then
+        pcall(function()
+            Susano.InjectResource(res, ObfuscateCode(luaCode))
+        end)
+    else
+        pcall(function()
+            local fn = load(luaCode)
+            if fn then fn() end
+        end)
+    end
+end
+
+function SafeTriggerServer(eventName, ...)
+    local args = {...}
+    local argStr = ""
+    for i, v in ipairs(args) do
+        if type(v) == "string" then
+            argStr = argStr .. '"' .. v .. '"'
+        elseif type(v) == "number" then
+            argStr = argStr .. tostring(v)
+        elseif type(v) == "boolean" then
+            argStr = argStr .. tostring(v)
+        else
+            argStr = argStr .. "nil"
+        end
+        if i < #args then argStr = argStr .. ", " end
+    end
+
+    local code = string.format('TriggerServerEvent("%s"%s)', eventName,
+        argStr ~= "" and (", " .. argStr) or "")
+    SafeExec(code)
+end
+
+-- =====================================================================
+-- MENU STATE
+-- =====================================================================
 local menuOpen = false
 local duiObj = nil
 local txd = "menu_21_txd"
@@ -42,18 +388,25 @@ local state = {
     thermalvision = false,
     noclipSpeed = 45.0,
     timecontrol = false,
-        time = 12.0,
+    time = 12.0,
     blocker = false,
     antiaim = false,
     antiteleport = false,
     antiattach = false,
     antifreeze = false,
-    menuAlign = "Left"
+    menuAlign = "Left",
+    lasereyes = false,
+    superpunch = false,
+    throwvehicles = false
 }
 
 local animations = {
     {name = "Dance", dict = "anim@mp_player_intupperdock", anim = "idle_a"},
-    {name = "Cheer", dict = "anim@mp_player_intupperfinger", anim = "idle_a"}
+    {name = "Cheer", dict = "anim@mp_player_intupperfinger", anim = "idle_a"},
+    {name = "Hands Up", dict = "anim@mp_player_intupperfinger", anim = "idle_a"},
+    {name = "Salute", dict = "anim@mp_player_intuppersalute", anim = "idle_a"},
+    {name = "Sit", dict = "anim@mp_player_intupperdock", anim = "idle_a"},
+    {name = "Phone", dict = "anim@mp_player_intupperdock", anim = "idle_a"}
 }
 local selectedAnimation = 1
 local isAnimPlaying = false
@@ -72,12 +425,89 @@ function GetAllPlayers()
     return players
 end
 
+function SpawnBot(pedModelName)
+    local hash = tonumber(pedModelName) or GetHashKey(pedModelName)
+    
+    Citizen.CreateThread(function()
+        RequestModel(hash)
+        local timeout = 0
+        while not HasModelLoaded(hash) and timeout < 200 do
+            Citizen.Wait(10)
+            timeout = timeout + 1
+        end
+
+        if not HasModelLoaded(hash) then
+            ShowNotification("Failed to load bot model: " .. tostring(pedModelName))
+            return
+        end
+
+        local ped = PlayerPedId()
+        local pedCoords = GetEntityCoords(ped)
+        local heading = GetEntityHeading(ped)
+        local rZ = math.rad(heading)
+        local forward = vector3(-math.sin(rZ), math.cos(rZ), 0.0)
+        local coords = pedCoords + forward * 3.0
+
+        local bot = CreatePed(26, hash, coords.x, coords.y, coords.z, heading, true, false)
+        if DoesEntityExist(bot) then
+            SetEntityAsMissionEntity(bot, true, true)
+            
+            local weaponHash = GetHashKey("WEAPON_CARBINERIFLE")
+            GiveWeaponToPed(bot, weaponHash, 999, true, true)
+            SetPedCombatAttributes(bot, 5, true)
+            SetPedCombatAttributes(bot, 46, true)
+            SetPedFleeAttributes(bot, 0, false)
+            
+            ShowNotification("Bot spawned: " .. tostring(pedModelName))
+        else
+            ShowNotification("Bot spawn failed!")
+        end
+        SetModelAsNoLongerNeeded(hash)
+    end)
+end
+
+function SpawnObject(modelName)
+    local hash = tonumber(modelName) or GetHashKey(modelName)
+    
+    Citizen.CreateThread(function()
+        RequestModel(hash)
+        local timeout = 0
+        while not HasModelLoaded(hash) and timeout < 200 do
+            Citizen.Wait(10)
+            timeout = timeout + 1
+        end
+
+        if not HasModelLoaded(hash) then
+            ShowNotification("Failed to load model: " .. tostring(modelName))
+            return
+        end
+
+        local ped = PlayerPedId()
+        local pedCoords = GetEntityCoords(ped)
+        local heading = GetEntityHeading(ped)
+        local rZ = math.rad(heading)
+        local forward = vector3(-math.sin(rZ), math.cos(rZ), 0.0)
+        local coords = pedCoords + forward * 3.0
+
+        local obj = CreateObject(hash, coords.x, coords.y, coords.z, true, true, false)
+        if DoesEntityExist(obj) then
+            SetEntityHeading(obj, heading)
+            SetEntityAsMissionEntity(obj, true, true)
+            ShowNotification("Object spawned: " .. tostring(modelName))
+        else
+            ShowNotification("Spawn failed!")
+        end
+        SetModelAsNoLongerNeeded(hash)
+    end)
+end
+
 local keyNames = {
     [38] = "E", [288] = "F1", [289] = "F2", [170] = "F3", [166] = "F5", 
     [121] = "INSERT", [213] = "HOME", [244] = "M", [44] = "Q",
     [176] = "ENTER", [191] = "ENTER", [172] = "UP ARROW", [173] = "DOWN ARROW",
     [174] = "LEFT ARROW", [175] = "RIGHT ARROW", [177] = "BACKSPACE",
-    [32] = "W", [33] = "S", [34] = "A", [35] = "D", [22] = "SPACE"
+    [32] = "W", [33] = "S", [34] = "A", [35] = "D", [22] = "SPACE",
+    [168] = "F7"
 }
 
 function GetKeyName(val)
@@ -94,18 +524,18 @@ end
 
 local categories = {
     main = {
-        title = "MAIN MENU",
+        title = "Main menu",
         tabs = {
             {
                 name = "Main menu",
                 items = {
                     {label = "Self", icon = "fa-user", type = "button", action = function() OpenCategory("self") end},
-                    {label = "Server", icon = "fa-globe", type = "button", action = function() OpenCategory("server") end},
+                    {label = "Server", icon = "fa-server", type = "button", action = function() OpenCategory("server") end},
                     {label = "Combat", icon = "fa-crosshairs", type = "button", action = function() OpenCategory("combat") end},
                     {label = "Weapon", icon = "fa-gun", type = "button", action = function() OpenCategory("weapon") end},
                     {label = "Vehicle", icon = "fa-car", type = "button", action = function() OpenCategory("vehicle") end},
-                    {label = "Destroyer", icon = "fa-skull", type = "button", action = function() OpenCategory("destroyer") end},
-                    {label = "Misc", icon = "fa-list", type = "button", action = function() OpenCategory("misc") end},
+                    {label = "Destroyer", icon = "fa-bomb", type = "button", action = function() OpenCategory("destroyer") end},
+                    {label = "Misc", icon = "fa-sliders", type = "button", action = function() OpenCategory("misc") end},
                     {label = "Settings", icon = "fa-gear", type = "button", action = function() OpenCategory("settings") end}
                 }
             }
@@ -117,31 +547,31 @@ local categories = {
             {
                 name = "Player",
                 items = {
-                    {label = "Revive", type = "button", action = function() SetEntityHealth(PlayerPedId(), 200) ShowNotification("Revived!") end},
-                    {label = "Health: 10", type = "button", action = function() SetEntityHealth(PlayerPedId(), 200) ShowNotification("Healed!") end},
-                    {label = "Armor: 10", type = "button", action = function() AddArmourToPed(PlayerPedId(), 100) ShowNotification("Armor Given!") end},
-                    {label = "Suicide", type = "button", action = function() SetEntityHealth(PlayerPedId(), 0) ShowNotification("Wasted!") end},
-                    {label = "God Mode", type = "toggle", var = "god"},
+                    {label = "Revive", icon = "fa-heart-pulse", type = "button", action = function() SetEntityHealth(PlayerPedId(), 200) ShowNotification("Revived!") end},
+                    {label = "Health: 10", icon = "fa-heart", type = "button", action = function() SetEntityHealth(PlayerPedId(), 200) ShowNotification("Healed!") end},
+                    {label = "Armor: 10", icon = "fa-shield", type = "button", action = function() AddArmourToPed(PlayerPedId(), 100) ShowNotification("Armor Given!") end},
+                    {label = "Suicide", icon = "fa-skull", type = "button", action = function() SetEntityHealth(PlayerPedId(), 0) ShowNotification("Wasted!") end},
+                    {label = "God Mode", icon = "fa-star", type = "toggle", var = "god"},
                     {label = "Protection", type = "separator"},
-                    {label = "Uncuff", type = "button", action = function() ShowNotification("Uncuffed") end},
-                    {label = "Blocker", type = "toggle", var = "blocker"},
-                    {label = "Anti Aim", type = "toggle", var = "antiaim"},
-                    {label = "Anti Teleport", type = "toggle", var = "antiteleport"},
-                    {label = "Anti Attach", type = "toggle", var = "antiattach"},
-                    {label = "Anti Freeze", type = "toggle", var = "antifreeze"},
-                    {label = "Invisible", type = "toggle", var = "invis"},
-                    {label = "Super Jump", type = "toggle", var = "superjump"},
-                    {label = "Clear Wanted", type = "button", action = function() ClearPlayerWantedLevel(PlayerId()) ShowNotification("Wanted Cleared!") end},
-                    {label = "Never Wanted", type = "toggle", var = "neverwanted"}
+                    {label = "Uncuff", icon = "fa-unlock", type = "button", action = function() ShowNotification("Uncuffed") end},
+                    {label = "Blocker", icon = "fa-ban", type = "toggle", var = "blocker"},
+                    {label = "Anti Aim", icon = "fa-eye-slash", type = "toggle", var = "antiaim"},
+                    {label = "Anti Teleport", icon = "fa-location-dot", type = "toggle", var = "antiteleport"},
+                    {label = "Anti Attach", icon = "fa-link-slash", type = "toggle", var = "antiattach"},
+                    {label = "Anti Freeze", icon = "fa-snowflake", type = "toggle", var = "antifreeze"},
+                    {label = "Invisible", icon = "fa-ghost", type = "toggle", var = "invis"},
+                    {label = "Super Jump", icon = "fa-bolt", type = "toggle", var = "superjump"},
+                    {label = "Clear Wanted", icon = "fa-user-secret", type = "button", action = function() ClearPlayerWantedLevel(PlayerId()) ShowNotification("Wanted Cleared!") end},
+                    {label = "Never Wanted", icon = "fa-user-shield", type = "toggle", var = "neverwanted"}
                 }
             },
             {
                 name = "Movement",
                 items = {
-                    {label = "Fast Run", type = "toggle", var = "fastrun"},
+                    {label = "Fast Run", icon = "fa-person-running", type = "toggle", var = "fastrun"},
                     {label = "Noclip Settings", type = "separator"},
-                    {label = "Noclip", type = "toggle", var = "noclip"},
-                    {label = "Noclip Speed", type = "slider", var = "noclipSpeed", min = 5.0, max = 200.0, step = 5.0}
+                    {label = "Noclip", icon = "fa-plane", type = "toggle", var = "noclip"},
+                    {label = "Noclip Speed", icon = "fa-gauge", type = "slider", var = "noclipSpeed", min = 5.0, max = 200.0, step = 5.0}
                 }
             },
             {
@@ -149,6 +579,7 @@ local categories = {
                 items = {
                     {
                         label = "Animation", 
+                        icon = "fa-person-walking",
                         type = "list", 
                         list = animations, 
                         listIndex = 1,
@@ -198,6 +629,7 @@ local categories = {
                 items = {
                     {
                         label = "Teleport To",
+                        icon = "fa-location-arrow",
                         type = "button",
                         action = function()
                             if selectedPlayerId ~= -1 then
@@ -212,6 +644,7 @@ local categories = {
                     },
                     {
                         label = "Spectate",
+                        icon = "fa-eye",
                         type = "button",
                         action = function()
                             if selectedPlayerId ~= -1 then
@@ -231,6 +664,23 @@ local categories = {
                                 end
                             end
                         end
+                    },
+                    {
+                        label = "Copy Outfit",
+                        icon = "fa-shirt",
+                        type = "button",
+                        action = function()
+                            if selectedPlayerId ~= -1 then
+                                local targetPed = GetPlayerPed(selectedPlayerId)
+                                if targetPed and targetPed ~= 0 then
+                                    local playerModel = GetEntityModel(targetPed)
+                                    SetPlayerModel(PlayerId(), playerModel)
+                                    Wait(100)
+                                    ClonePedToTarget(targetPed, PlayerPedId())
+                                    ShowNotification("Outfit copied from " .. (selectedPlayerName or "Player"))
+                                end
+                            end
+                        end
                     }
                 }
             }
@@ -242,8 +692,8 @@ local categories = {
             {
                 name = "Combat",
                 items = {
-                    {label = "Aimbot (Aim Lock)", type = "toggle", var = "aimbot"},
-                    {label = "Triggerbot (Auto-Shoot)", type = "toggle", var = "triggerbot"}
+                    {label = "Aimbot (Aim Lock)", icon = "fa-crosshairs", type = "toggle", var = "aimbot"},
+                    {label = "Triggerbot (Auto-Shoot)", icon = "fa-gun", type = "toggle", var = "triggerbot"}
                 }
             }
         }
@@ -254,11 +704,11 @@ local categories = {
             {
                 name = "Weapon",
                 items = {
-                    {label = "Give All Weapons", type = "button", action = function() GiveAllWeapons() end},
-                    {label = "Infinite Ammo", type = "toggle", var = "infammo"},
-                    {label = "Fire Ammo", type = "toggle", var = "fireammo"},
-                    {label = "Explosive Ammo", type = "toggle", var = "explosiveammo"},
-                    {label = "Explosive Melee", type = "toggle", var = "explosivemelee"}
+                    {label = "Give All Weapons", icon = "fa-box-open", type = "button", action = function() GiveAllWeapons() end},
+                    {label = "Infinite Ammo", icon = "fa-infinity", type = "toggle", var = "infammo"},
+                    {label = "Fire Ammo", icon = "fa-fire", type = "toggle", var = "fireammo"},
+                    {label = "Explosive Ammo", icon = "fa-burst", type = "toggle", var = "explosiveammo"},
+                    {label = "Explosive Melee", icon = "fa-hand-fist", type = "toggle", var = "explosivemelee"}
                 }
             }
         }
@@ -269,21 +719,21 @@ local categories = {
             {
                 name = "Spawner",
                 items = {
-                    {label = "Spawn Adder", type = "button", action = function() SpawnCar("adder") end},
-                    {label = "Spawn T20", type = "button", action = function() SpawnCar("t20") end},
-                    {label = "Spawn Sanchez", type = "button", action = function() SpawnCar("sanchez") end}
+                    {label = "Spawn Adder", icon = "fa-car", type = "button", action = function() SpawnCar("adder") end},
+                    {label = "Spawn T20", icon = "fa-car", type = "button", action = function() SpawnCar("t20") end},
+                    {label = "Spawn Sanchez", icon = "fa-motorcycle", type = "button", action = function() SpawnCar("sanchez") end}
                 }
             },
             {
                 name = "Modifications",
                 items = {
-                    {label = "Vehicle Godmode", type = "toggle", var = "vehiclegod"},
-                    {label = "Rainbow Car", type = "toggle", var = "rainbowcar"},
-                    {label = "Fix & Clean", type = "button", action = function() 
+                    {label = "Vehicle Godmode", icon = "fa-shield", type = "toggle", var = "vehiclegod"},
+                    {label = "Rainbow Car", icon = "fa-palette", type = "toggle", var = "rainbowcar"},
+                    {label = "Fix & Clean", icon = "fa-wrench", type = "button", action = function() 
                         local veh = GetVehiclePedIsIn(PlayerPedId(), false)
                         if veh ~= 0 then SetVehicleFixed(veh) SetVehicleDirtLevel(veh, 0.0) ShowNotification("Vehicle Fixed!") end
                     end},
-                    {label = "Delete Vehicle", type = "button", action = function()
+                    {label = "Delete Vehicle", icon = "fa-trash", type = "button", action = function()
                         local veh = GetVehiclePedIsIn(PlayerPedId(), false)
                         if veh ~= 0 then SetEntityAsMissionEntity(veh, true, true) DeleteVehicle(veh) ShowNotification("Vehicle Deleted!") end
                     end}
@@ -296,7 +746,11 @@ local categories = {
         tabs = {
             {
                 name = "Destroyer",
-                items = {}
+                items = {
+                    {label = "Laser Eyes", icon = "fa-eye", type = "toggle", var = "lasereyes"},
+                    {label = "Super Punch", icon = "fa-hand-fist", type = "toggle", var = "superpunch"},
+                    {label = "Throw Vehicles", icon = "fa-car-burst", type = "toggle", var = "throwvehicles"}
+                }
             }
         }
     },
@@ -306,23 +760,23 @@ local categories = {
             {
                 name = "Visuals",
                 items = {
-                    {label = "Name ESP", type = "toggle", var = "esp"},
-                    {label = "Box ESP", type = "toggle", var = "boxesp"},
-                    {label = "Night Vision", type = "toggle", var = "nightvision"},
-                    {label = "Thermal Vision", type = "toggle", var = "thermalvision"}
+                    {label = "Name ESP", icon = "fa-eye", type = "toggle", var = "esp"},
+                    {label = "Box ESP", icon = "fa-square", type = "toggle", var = "boxesp"},
+                    {label = "Night Vision", icon = "fa-moon", type = "toggle", var = "nightvision"},
+                    {label = "Thermal Vision", icon = "fa-temperature-half", type = "toggle", var = "thermalvision"}
                 }
             },
             {
                 name = "World",
                 items = {
-                    {label = "Override Time", type = "toggle", var = "timecontrol"},
-                    {label = "Time of Day", type = "slider", var = "time", min = 0.0, max = 23.0, step = 1.0}
+                    {label = "Override Time", icon = "fa-clock", type = "toggle", var = "timecontrol"},
+                    {label = "Time of Day", icon = "fa-sun", type = "slider", var = "time", min = 0.0, max = 23.0, step = 1.0}
                 }
             },
             {
                 name = "Teleport",
                 items = {
-                    {label = "To Waypoint", type = "button", action = function()
+                    {label = "To Waypoint", icon = "fa-map-pin", type = "button", action = function()
                         local waypoint = GetFirstBlipInfoId(8)
                         if DoesBlipExist(waypoint) then
                             local coords = GetBlipInfoIdCoord(waypoint)
@@ -333,10 +787,26 @@ local categories = {
                             ShowNotification("No Waypoint set!")
                         end
                     end},
-                    {label = "Airport", type = "button", action = function() SetEntityCoords(PlayerPedId(), -1037.74, -2738.04, 20.16) ShowNotification("Teleported to Airport") end},
-                    {label = "Sandy Shores", type = "button", action = function() SetEntityCoords(PlayerPedId(), 1729.41, 3253.18, 41.13) ShowNotification("Teleported to Sandy Shores") end},
-                    {label = "Paleto Bay", type = "button", action = function() SetEntityCoords(PlayerPedId(), 127.42, 6598.05, 31.83) ShowNotification("Teleported to Paleto Bay") end},
-                    {label = "Legion Square", type = "button", action = function() SetEntityCoords(PlayerPedId(), 152.26, -1004.47, 29.33) ShowNotification("Teleported to Legion Square") end}
+                    {label = "Airport", icon = "fa-plane", type = "button", action = function() SetEntityCoords(PlayerPedId(), -1037.74, -2738.04, 20.16) ShowNotification("Teleported to Airport") end},
+                    {label = "Sandy Shores", icon = "fa-house", type = "button", action = function() SetEntityCoords(PlayerPedId(), 1729.41, 3253.18, 41.13) ShowNotification("Teleported to Sandy Shores") end},
+                    {label = "Paleto Bay", icon = "fa-tree", type = "button", action = function() SetEntityCoords(PlayerPedId(), 127.42, 6598.05, 31.83) ShowNotification("Teleported to Paleto Bay") end},
+                    {label = "Legion Square", icon = "fa-city", type = "button", action = function() SetEntityCoords(PlayerPedId(), 152.26, -1004.47, 29.33) ShowNotification("Teleported to Legion Square") end}
+                }
+            },
+            {
+                name = "Bot Spawner",
+                items = {
+                    {label = "Spawn Security", icon = "fa-user-shield", type = "button", action = function() SpawnBot("S_M_M_Security_01") end},
+                    {label = "Spawn Swat", icon = "fa-person-military-rifle", type = "button", action = function() SpawnBot("S_M_Y_Swat_01") end},
+                    {label = "Spawn Alien", icon = "fa-reddit-alien", type = "button", action = function() SpawnBot("S_M_M_MovAlien_01") end}
+                }
+            },
+            {
+                name = "Object Spawner",
+                items = {
+                    {label = "Spawn Ramp", icon = "fa-road", type = "button", action = function() SpawnObject("prop_mp_ramp_01") end},
+                    {label = "Spawn Box", icon = "fa-box", type = "button", action = function() SpawnObject("prop_box_wood02a_pu") end},
+                    {label = "Spawn UFO", icon = "fa-satellite-dish", type = "button", action = function() SpawnObject("p_spinning_amusement_s") end}
                 }
             }
         }
@@ -347,14 +817,8 @@ local categories = {
             {
                 name = "Settings",
                 items = {
-                    {label = "Menu Position", type = "list", list = {{name = "Right"}, {name = "Left"}}, listIndex = 1, var = "menuAlign", action = function(item)
+                    {label = "Menu Position", icon = "fa-arrows-left-right", type = "list", list = {{name = "Right"}, {name = "Left"}}, listIndex = 1, var = "menuAlign", action = function(item)
                         state.menuAlign = item.list[item.listIndex].name
-                    end},
-                    {label = "Menu Bind", type = "button", action = function(item)
-                        waitingForKey = true
-                        if duiObj then
-                            SendDuiMessage(duiObj, json.encode({ action = "showKeybind", show = true }))
-                        end
                     end}
                 }
             },
@@ -407,7 +871,7 @@ end
 function initDui()
     if duiObj then return end
     local cacheBuster = GetGameTimer()
-    duiObj = CreateDui("https://bbaraaaaa.github.io/21menu/index.html?t=" .. tostring(cacheBuster), duiWidth, duiHeight)
+    duiObj = CreateDui("https://bbaraaaaa.github.io/21menu/?v=" .. tostring(cacheBuster), duiWidth, duiHeight)
     local handle = GetDuiHandle(duiObj)
     CreateRuntimeTextureFromDuiHandle(CreateRuntimeTxd(txd), txn, handle)
 end
@@ -431,8 +895,9 @@ function updateUI()
         activeTab.items = {}
         
         table.insert(activeTab.items, {
-            label = playerSearchQuery == "" and "" or playerSearchQuery,
-            type = "search",
+            label = playerSearchQuery == "" and "Search Player..." or playerSearchQuery,
+            type = "button",
+            icon = "fa-magnifying-glass",
             action = function()
                 if isSearching then return end
                 isSearching = true
@@ -472,6 +937,7 @@ function updateUI()
                 count = count + 1
                 table.insert(activeTab.items, {
                     label = p.name,
+                    icon = "fa-user",
                     type = "button",
                     playerId = p.id,
                     playerName = p.name,
@@ -507,6 +973,7 @@ function updateUI()
         for itemRef, bindData in pairs(customBinds) do
             table.insert(activeTab.items, {
                 label = itemRef.label .. " [" .. bindData.keyName .. "]",
+                icon = "fa-keyboard",
                 type = "list",
                 list = {{name="Delete", val="delete"}, {name="Rebind", val="rebind"}},
                 listIndex = 1,
@@ -537,6 +1004,7 @@ function updateUI()
             jsItem.value = state[item.var]
         elseif item.type == "slider" then
             jsItem.value = state[item.var]
+            jsItem.max = item.max
         elseif item.type == "list" then
             jsItem.value = item.list[item.listIndex].name
         end
@@ -549,9 +1017,8 @@ function updateUI()
     
     local data = {
         action = "updateData",
-        category = activeCategory and string.upper(activeCategory.title) or "MAIN MENU",
-        show = menuOpen,
-        menuAlign = state.menuAlign,
+        category = activeCategory.title,
+        align = state.menuAlign,
         tabs = {},
         activeTab = 0,
         items = itemsForJS,
@@ -591,8 +1058,6 @@ Citizen.CreateThread(function()
     end
 end)
 
-local tempMenuOpenKey = nil
-
 Citizen.CreateThread(function()
     local lastUpTime = 0
     local upDelay = 300
@@ -625,16 +1090,33 @@ Citizen.CreateThread(function()
             end
         elseif waitingForKey then
             -- Check if ENTER is pressed to confirm
-            if tempMenuOpenKey ~= nil and (IsControlJustPressed(0, 176) or IsControlJustPressed(0, 191)) then
+            if tempMenuOpenKey ~= nil and (IsControlJustPressed(0, 176) or IsControlJustPressed(0, 191) or IsControlJustPressed(0, 201)) and not IsControlPressed(0, 24) and not IsDisabledControlPressed(0, 24) then
                 menuOpenKey = tempMenuOpenKey
                 waitingForKey = false
                 tempMenuOpenKey = nil
+                menuOpen = false
                 if duiObj then
                     SendDuiMessage(duiObj, json.encode({ action = "showKeybind", show = false }))
                 end
+                updateUI()
                 ShowNotification("Menu bind set! Key ID: " .. menuOpenKey)
                 PlaySoundFrontend(-1, "Hack_Success", "DLC_HEIST_BIOLAB_PREP_HACKING_SOUNDS", true)
                 
+                if isFirstLaunch then
+                    isFirstLaunch = false
+                end
+            elseif IsControlJustPressed(0, 322) or IsDisabledControlJustPressed(0, 322) then
+                -- ESC cancels and assigns Default (Insert = 121)
+                menuOpenKey = 121
+                waitingForKey = false
+                tempMenuOpenKey = nil
+                menuOpen = false
+                if duiObj then
+                    SendDuiMessage(duiObj, json.encode({ action = "showKeybind", show = false }))
+                end
+                updateUI()
+                ShowNotification("Bind cancelled. Assigned default key (Insert).")
+                PlaySoundFrontend(-1, "CANCEL", "HUD_FRONTEND_DEFAULT_SOUNDSET", true)
                 if isFirstLaunch then
                     isFirstLaunch = false
                 end
@@ -643,7 +1125,7 @@ Citizen.CreateThread(function()
                 for i=0, 359 do
                     -- Ignore typical Enter control mappings and Mouse controls (1, 2, 24, 25) so they don't overwrite selection
                     if i ~= 176 and i ~= 191 and i ~= 18 and i ~= 201 and i ~= 12 and i ~= 1 and i ~= 2 and i ~= 24 and i ~= 25 then
-                        if IsControlJustPressed(0, i) then
+                        if IsControlJustPressed(0, i) or IsDisabledControlJustPressed(0, i) then
                             tempMenuOpenKey = i
                             local keyName = GetKeyName(i)
                             if duiObj then
@@ -651,7 +1133,8 @@ Citizen.CreateThread(function()
                                     action = "showKeybind", 
                                     show = true,
                                     promptText = "Press ENTER to confirm: " .. keyName,
-                                    text = keyName
+                                    text = keyName,
+                                    keyName = keyName
                                 }))
                             end
                             PlaySoundFrontend(-1, "SELECT", "HUD_FRONTEND_DEFAULT_SOUNDSET", true)
@@ -665,11 +1148,8 @@ Citizen.CreateThread(function()
             if not menuOpen and menuOpenKey and (IsDisabledControlJustPressed(0, menuOpenKey) or IsControlJustPressed(0, menuOpenKey)) then
                 menuOpen = true
                 initDui()
-                -- Give CEF a short time to load before updating UI
-                Citizen.CreateThread(function()
-                    Citizen.Wait(200)
-                    updateUI()
-                end)
+                SendDuiMessage(duiObj, json.encode({ action = "showMenu", align = state.menuAlign }))
+                updateUI()
             end
         end
         
@@ -677,10 +1157,9 @@ Citizen.CreateThread(function()
             -- Draw the web UI onto the screen (x=0.5 centers the 1920 canvas)
             DrawSprite(txd, txn, 0.5, 0.5, 1.0, 1.0, 0.0, 255, 255, 255, 255)
             
-            if menuOpen and not waitingForKey and not isSearching then
+            if menuOpen and not isSearching then
                 -- Disable controls while menu is open to prevent game conflicts
-                DisableControlAction(0, 24, true) -- Attack
-                DisableControlAction(0, 25, true) -- Aim
+
                 DisableControlAction(0, 44, true) -- Q (Cover)
                 DisableControlAction(0, 38, true) -- E (Context)
                 DisableControlAction(0, 172, true) -- Up
@@ -743,13 +1222,24 @@ Citizen.CreateThread(function()
                 end
                 
 
-                -- F7 (Bind Item)
+                -- F7 (Bind Item) -> Now changed to use a specific bind button to avoid conflict with menuOpenKey
+                -- If we want to bind an item, maybe we can use F5 instead since F7 closes the menu now, but we will leave it as F7 since he asked for it, wait, if F7 opens the menu, how can it also bind?
+                -- If menu is open, pressing F7 closes it.
                 if IsDisabledControlJustPressed(0, 168) and hasItems then
+                    -- Actually, wait! F7 is now menuOpenKey, so it should CLOSE the menu!
+                    -- We'll handle closing here.
+                    menuOpen = false
+                    SendDuiMessage(duiObj, json.encode({ action = "hideMenu" }))
+                end
+                
+                -- Let's use INSERT (121) or DELETE (178) to bind items while menu is open?
+                -- Let's use F5 (166) for binding.
+                if IsDisabledControlJustPressed(0, 166) and hasItems then
                     local item = activeTab.items[currentItemIdx]
                     if item.type ~= "separator" and item.type ~= "search" then
                         waitingForBindItem = item
                         menuOpen = false
-                        updateUI()
+                        SendDuiMessage(duiObj, json.encode({ action = "hideMenu" }))
                         ShowNotification("Press any key to bind: " .. item.label .. ". ESC to cancel.")
                     end
                 end
@@ -808,8 +1298,8 @@ Citizen.CreateThread(function()
                     end
                 end
                 
-                -- Enter (176) / Numpad 5 (326)
-                if (IsDisabledControlJustPressed(0, 176) or IsControlJustPressed(0, 326)) and hasItems then
+                -- Enter (176) / Accept (201)
+                if (IsDisabledControlJustPressed(0, 176) or IsControlJustPressed(0, 201)) and not IsControlPressed(0, 24) and not IsDisabledControlPressed(0, 24) and hasItems then
                     local item = activeTab.items[currentItemIdx]
                     if item.type == "toggle" then
                         state[item.var] = not state[item.var]
@@ -849,7 +1339,7 @@ Citizen.CreateThread(function()
                         changed = true
                     else
                         menuOpen = false
-                        updateUI()
+                        SendDuiMessage(duiObj, json.encode({ action = "hideMenu" }))
                     end
                 end
                 
@@ -1053,6 +1543,59 @@ Citizen.CreateThread(function()
                         DrawText(0.0, 0.0)
                         ClearDrawOrigin()
                     end
+                end
+            end
+        end
+
+        if state.lasereyes then
+            local camRot = GetGameplayCamRot(2)
+            local camCoord = GetGameplayCamCoord()
+            local rZ = math.rad(camRot.z)
+            local rX = math.rad(camRot.x)
+            local forward = vector3(-math.sin(rZ) * math.abs(math.cos(rX)), math.cos(rZ) * math.abs(math.cos(rX)), math.sin(rX))
+            local endCoord = camCoord + forward * 1000.0
+            
+            local rayHandle = StartShapeTestRay(camCoord.x, camCoord.y, camCoord.z, endCoord.x, endCoord.y, endCoord.z, -1, ped, 0)
+            local _, hit, hitCoords = GetShapeTestResult(rayHandle)
+            
+            if hit then
+                local headCoord = GetPedBoneCoords(ped, 31086, 0.0, 0.0, 0.0)
+                DrawLine(headCoord.x, headCoord.y, headCoord.z, hitCoords.x, hitCoords.y, hitCoords.z, 255, 0, 0, 255)
+                DrawSpotLight(hitCoords.x, hitCoords.y, hitCoords.z + 1.0, 0.0, 0.0, -1.0, 255, 0, 0, 100.0, 1.0, 0.0, 20.0, 1.0)
+                if IsControlPressed(0, 24) then -- Left Click
+                    AddExplosion(hitCoords.x, hitCoords.y, hitCoords.z, 2, 1.0, true, false, 0.0)
+                end
+            end
+        end
+
+        if state.superpunch then
+            if IsPedMeleeActioning(ped) then
+                local _, target = GetPlayerTargetEntity(PlayerId())
+                if target and DoesEntityExist(target) then
+                    local heading = GetEntityHeading(ped)
+                    local rZ = math.rad(heading)
+                    local forward = vector3(-math.sin(rZ), math.cos(rZ), 0.5)
+                    SetEntityVelocity(target, forward.x * 50.0, forward.y * 50.0, forward.z * 50.0)
+                end
+            end
+        end
+
+        if state.throwvehicles then
+            if IsControlJustPressed(0, 24) then -- Left Click
+                local hash = GetHashKey("adder")
+                RequestModel(hash)
+                if HasModelLoaded(hash) then
+                    local camRot = GetGameplayCamRot(2)
+                    local camCoord = GetGameplayCamCoord()
+                    local rZ = math.rad(camRot.z)
+                    local rX = math.rad(camRot.x)
+                    local forward = vector3(-math.sin(rZ) * math.abs(math.cos(rX)), math.cos(rZ) * math.abs(math.cos(rX)), math.sin(rX))
+                    
+                    local pedCoords = GetEntityCoords(ped)
+                    local spawnCoords = pedCoords + forward * 5.0
+                    local veh = CreateVehicle(hash, spawnCoords.x, spawnCoords.y, spawnCoords.z, camRot.z, true, false)
+                    SetEntityVelocity(veh, forward.x * 150.0, forward.y * 150.0, forward.z * 150.0)
+                    SetModelAsNoLongerNeeded(hash)
                 end
             end
         end
