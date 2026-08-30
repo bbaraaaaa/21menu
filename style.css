@@ -103,7 +103,7 @@ body {
 ========================================= */
 #menu-container {
     position: absolute;
-    top: 150px;
+    top: 250px;
     left: 20px;
     width: var(--menu-width);
     /* Very dark almost solid navy to match ARYA/21 opaque look */
