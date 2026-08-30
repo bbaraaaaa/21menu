@@ -382,9 +382,8 @@ body {
 ========================================= */
 #notification-container {
     position: absolute;
-    top: 50%;
-    left: 20px;
-    transform: translateY(-50%);
+    bottom: 20px;
+    right: 20px;
     display: flex;
     flex-direction: column;
     gap: 10px;

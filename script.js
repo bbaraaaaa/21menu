@@ -140,7 +140,7 @@ window.addEventListener("message", function(event) {
                     const chevron = document.createElement("i");
                     chevron.className = "fa-solid fa-chevron-right chevron";
                     rightDiv.appendChild(chevron);
-                } 
+                }
                 else if (item.type === "toggle") {
                     const toggleState = item.state !== undefined ? item.state : item.value;
                     const sw = document.createElement("div");
