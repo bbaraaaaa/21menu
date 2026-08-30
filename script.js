@@ -1,140 +1,209 @@
-window.addEventListener('message', function(event) {
-    let data = event.data;
+window.addEventListener("message", function(event) {
+    const data = event.data;
+    
+    let payload = data;
     if (typeof data === "string") {
         try {
-            data = JSON.parse(data);
+            payload = JSON.parse(data);
         } catch (e) {
+            console.error("Failed to parse JSON:", e);
             return;
         }
     }
 
-    let keybindOverlay = document.getElementById('keybind-overlay');
-    let menuContainer = document.getElementById('menu-container');
+    const keybindOverlay = document.getElementById('keybind-overlay');
+    const menuContainer = document.getElementById('menu-container');
 
-    if (data.action === "showKeybind") {
-        keybindOverlay.className = 'fade-visible';
+    if (payload.action === "showKeybind") {
+        keybindOverlay.className = payload.show ? 'fade-visible' : 'fade-hidden';
         menuContainer.className = 'fade-hidden';
         
-        if (data.keyName) {
-            document.getElementById('keybind-inst').innerText = "Press ENTER to confirm: " + data.keyName;
-            document.getElementById('keybind-btn').innerText = "CONFIRM";
-            document.getElementById('keybind-btn').style.backgroundColor = "#fff";
-            document.getElementById('keybind-btn').style.color = "#000";
+        if (payload.keyName) {
+            document.getElementById('keybind-inst').innerText = payload.promptText;
+            document.getElementById('keybind-btn').innerText = payload.text;
+            document.getElementById('keybind-btn').style.backgroundColor = "var(--bg-selected)";
+            document.getElementById('keybind-btn').style.color = "var(--text-selected)";
         } else {
             document.getElementById('keybind-inst').innerText = "Enter Menu Open Key ...";
             document.getElementById('keybind-btn').innerText = "Waiting for input...";
-            document.getElementById('keybind-btn').style.backgroundColor = "#111";
-            document.getElementById('keybind-btn').style.color = "#fff";
+            document.getElementById('keybind-btn').style.backgroundColor = "var(--bg-light)";
+            document.getElementById('keybind-btn').style.color = "var(--text-main)";
         }
-    }
-    else if (data.action === "showMenu") {
+    } 
+    else if (payload.action === "showMenu") {
         keybindOverlay.className = 'fade-hidden';
         menuContainer.className = 'fade-visible';
         
-        if (data.align === "Right") {
-            menuContainer.style.left = 'auto';
-            menuContainer.style.right = '20px';
+        if (payload.align === "Right") {
+            menuContainer.classList.add("align-right");
         } else {
-            menuContainer.style.left = '20px';
-            menuContainer.style.right = 'auto';
+            menuContainer.classList.remove("align-right");
         }
     }
-    else if (data.action === "hideMenu") {
-        keybindOverlay.className = 'fade-hidden';
+    else if (payload.action === "hideMenu") {
         menuContainer.className = 'fade-hidden';
     }
-    else if (data.action === "updateData" || data.action === "update") {
-        document.getElementById('category-title').innerText = data.category || "MAIN MENU";
+    else if (payload.action === "updateData" || payload.action === "update") {
+        if (payload.show !== undefined) {
+            menuContainer.className = payload.show ? 'fade-visible' : 'fade-hidden';
+        }
         
-        let allTabs = data.tabs || [];
-        let activeTabIdx = data.activeTab || 0;
-        
-        if (allTabs.length > 0) {
-            let tabsHtml = "";
-            let numTabs = allTabs.length;
-            
-            if(numTabs === 1) {
-                tabsHtml = `<div class="tab active">${allTabs[0]}</div>`;
-            } else {
-                for (let i = 0; i < numTabs; i++) {
-                    let isActive = (i === activeTabIdx) ? "active" : "";
-                    tabsHtml += `<div class="tab ${isActive}">${allTabs[i]}</div>`;
-                }
-            }
-            document.getElementById('tabs-container').innerHTML = tabsHtml;
-            document.getElementById('tabs-container').style.display = 'flex';
+        if (payload.align === "Right" || payload.menuAlign === "Right") {
+            menuContainer.classList.add("align-right");
         } else {
-            document.getElementById('tabs-container').style.display = 'none';
+            menuContainer.classList.remove("align-right");
         }
+
+        // Render Tabs
+        const tabsContainer = document.getElementById("menu-tabs");
+        tabsContainer.innerHTML = "";
         
-        let listHtml = "";
-        let items = data.items;
-        let selectedIndex = data.selectedIndex - 1; // Lua is 1-indexed
-        
-        let maxItems = 10;
-        let startIndex = 0;
-        if (selectedIndex >= maxItems) {
-            startIndex = selectedIndex - maxItems + 1;
+        if (payload.tabs && payload.tabs.length > 0) {
+            payload.tabs.forEach((tabName, index) => {
+                const tabEl = document.createElement("div");
+                tabEl.className = "tab";
+                if (index === payload.activeTab) {
+                    tabEl.classList.add("active");
+                }
+                tabEl.innerText = tabName;
+                tabsContainer.appendChild(tabEl);
+            });
         }
-        
-        let visualSelectedIndex = -1;
-        
-        for (let i = 0; i < Math.min(items.length, maxItems); i++) {
-            let actualIndex = startIndex + i;
-            let item = items[actualIndex];
-            if (!item) continue;
-            
-            let isSelected = (actualIndex === selectedIndex);
-            if (isSelected && item.type !== "separator") {
-                visualSelectedIndex = i;
-            }
-            let selectedClass = isSelected ? "selected" : "";
-            let sepClass = (item.type === "separator") ? "menu-separator" : "";
-            
-            if (item.type === "separator") {
-                listHtml += `<div class="menu-item ${selectedClass} ${sepClass}">--- ${item.label} ---</div>`;
-            } else {
-                let rightContent = "";
+
+        // Render Items
+        const itemsContainer = document.getElementById("menu-items");
+        itemsContainer.innerHTML = "";
+
+        if (payload.items && payload.items.length > 0) {
+            payload.items.forEach((item, index) => {
+                // Ensure 1-based index from lua maps to 0-based in js
+                const isSelected = (index + 1) === payload.selectedIndex || index === payload.selectedIndex;
                 
-                if (item.type === "toggle") {
-                    let onClass = item.value ? "on" : "";
-                    rightContent = `<div class="toggle-switch ${onClass}"></div>`;
-                } else if (item.type === "slider" || item.type === "list") {
-                    rightContent = `<span>< ${item.value} ></span>`;
-                } else if (item.type === "button") {
-                    rightContent = `<span><i class="fa-solid fa-chevron-right"></i></span>`;
+                if (item.type === "separator") {
+                    const sep = document.createElement("div");
+                    sep.className = "item-separator";
+                    const span = document.createElement("span");
+                    span.innerText = item.label;
+                    sep.appendChild(span);
+                    itemsContainer.appendChild(sep);
+                    return; // Skip normal item styling
+                }
+
+                const itemEl = document.createElement("div");
+                itemEl.className = "item";
+                if (isSelected) itemEl.classList.add("selected");
+
+                const leftDiv = document.createElement("div");
+                leftDiv.className = "item-left";
+                
+                if (item.icon) {
+                    const icon = document.createElement("i");
+                    icon.className = "fa-solid " + item.icon;
+                    leftDiv.appendChild(icon);
                 }
                 
-                if (item.bind) {
-                    rightContent += `<span style="margin-left: 8px; color: #f39c12;">[${item.bind}]</span>`;
+                const labelSpan = document.createElement("span");
+                labelSpan.innerText = item.label;
+                leftDiv.appendChild(labelSpan);
+
+                const rightDiv = document.createElement("div");
+                rightDiv.className = "item-right";
+
+                if (item.bind || item.bindKey) {
+                    const bindSpan = document.createElement("span");
+                    bindSpan.style.marginRight = "10px";
+                    bindSpan.style.fontSize = "11px";
+                    bindSpan.style.opacity = "0.7";
+                    bindSpan.innerText = "[" + (item.bind || item.bindKey) + "]";
+                    rightDiv.appendChild(bindSpan);
                 }
-                
-                let iconHtml = item.icon ? `<i class="fa-solid ${item.icon}"></i>` : "";
-                
-                listHtml += `
-                <div class="menu-item ${selectedClass}">
-                    <div class="left">${iconHtml} ${item.label}</div>
-                    <div class="right">${rightContent}</div>
-                </div>`;
+
+                if (item.type === "button" || item.type === "search") {
+                    const chevron = document.createElement("i");
+                    chevron.className = "fa-solid fa-chevron-right chevron";
+                    rightDiv.appendChild(chevron);
+                } 
+                else if (item.type === "toggle") {
+                    const toggleState = item.state !== undefined ? item.state : item.value;
+                    const sw = document.createElement("div");
+                    sw.className = "toggle-switch" + (toggleState ? " on" : "");
+                    const th = document.createElement("div");
+                    th.className = "toggle-thumb";
+                    sw.appendChild(th);
+                    rightDiv.appendChild(sw);
+                } 
+                else if (item.type === "slider") {
+                    const sliderCont = document.createElement("div");
+                    sliderCont.className = "slider-container";
+                    
+                    const track = document.createElement("div");
+                    track.className = "slider-track";
+                    
+                    const thumb = document.createElement("div");
+                    thumb.className = "slider-thumb";
+                    
+                    const val = item.value || 0;
+                    const max = item.max || 100;
+                    let pct = (val / max) * 100;
+                    if (pct > 100) pct = 100;
+                    
+                    thumb.style.left = `calc(${pct}% - 5px)`;
+                    
+                    track.appendChild(thumb);
+                    sliderCont.appendChild(track);
+                    rightDiv.appendChild(sliderCont);
+                }
+                else if (item.type === "list") {
+                    const listCont = document.createElement("div");
+                    listCont.className = "list-container";
+                    listCont.innerHTML = `<span class="list-arrow">&lt;</span> <span>${item.value || item.listName}</span> <span class="list-arrow">&gt;</span>`;
+                    rightDiv.appendChild(listCont);
+                }
+
+                itemEl.appendChild(leftDiv);
+                itemEl.appendChild(rightDiv);
+                itemsContainer.appendChild(itemEl);
+
+                if (isSelected) {
+                    itemEl.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+                }
+            });
+        }
+
+        // Update Footer
+        const maxItems = payload.items.filter(i => i.type !== 'separator').length;
+        const currentSelected = payload.items[payload.selectedIndex] && payload.items[payload.selectedIndex].type === 'separator' 
+            ? payload.selectedIndex // Approximate if landing on separator (which shouldn't happen based on lua logic)
+            : payload.selectedIndex + (payload.selectedIndex === 0 && maxItems > 0 && payload.items[0].type !== 'separator' ? 1 : 0); // Handle 0/1 indexing loosely for display
+            
+        // Calculate a visual index for the footer (skipping separators)
+        let visualIndex = 0;
+        let found = false;
+        for (let i = 0; i < payload.items.length; i++) {
+            if (payload.items[i].type !== 'separator') {
+                visualIndex++;
+            }
+            if (i === payload.selectedIndex || i+1 === payload.selectedIndex) {
+                found = true;
+                break;
             }
         }
+        if (!found) visualIndex = 1;
         
-        document.getElementById('items-list').innerHTML = listHtml;
-        
-        // Move selection box smoothly using translateY
-        let selBox = document.getElementById('selection-box');
-        if (visualSelectedIndex >= 0) {
-            selBox.className = 'selection-box active';
-            selBox.style.transform = `translateY(${visualSelectedIndex * 36}px)`;
-        } else {
-            selBox.className = 'selection-box';
-        }
-        
-        let totalItems = items.length;
-        if(totalItems > 0) {
-            document.getElementById('pagination').innerText = (selectedIndex + 1) + "/" + totalItems;
-        } else {
-            document.getElementById('pagination').innerText = "0/0";
-        }
+        document.getElementById('page-indicator').innerText = `${visualIndex}/${maxItems}`;
+    }
+    else if (payload.action === "notify") {
+        const container = document.getElementById("notification-container");
+        const notif = document.createElement("div");
+        notif.className = "notification";
+        notif.innerText = payload.message;
+        container.appendChild(notif);
+
+        setTimeout(() => {
+            notif.style.animation = "fadeOut 0.3s ease forwards";
+            setTimeout(() => {
+                notif.remove();
+            }, 300);
+        }, 3000);
     }
 });

@@ -3,54 +3,52 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>21 SAVAGE MENU</title>
-    <script>document.write('<link rel="stylesheet" href="style.css?v=' + Date.now() + '">');</script>
+    <title>21 Menu</title>
+    <link rel="stylesheet" href="style.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Pirata+One&family=Metal+Mania&display=swap" rel="stylesheet">
 </head>
 <body>
-    
-    <!-- Keybind Popup Overlay -->
-    <div id="keybind-overlay" class="fade-visible">
+    <div id="keybind-overlay" class="fade-hidden">
         <div class="keybind-box">
             <div class="keybind-header">
-                <img src="https://i.imgur.com/3q1jO7F.png" alt="icon">
-                <span>callmeanger</span>
+                <img src="banner.png" alt="21" class="keybind-logo">
             </div>
-            <p class="keybind-title">Menu bind</p>
-            <p class="keybind-instruction" id="keybind-inst">Enter Menu Open Key ...</p>
-            <div class="keybind-btn" id="keybind-btn">Waiting for input...</div>
+            <div class="keybind-content">
+                <p class="keybind-title">Menu bind</p>
+                <p class="keybind-inst" id="keybind-inst">Enter Menu Open Key ...</p>
+                <div class="keybind-btn" id="keybind-btn">Waiting for input...</div>
+            </div>
         </div>
     </div>
 
-    <!-- Main Menu UI -->
-    <div id="menu-container" class="fade-hidden" style="opacity: 0; pointer-events: none; transform: scale(0.95);">
-        <div class="banner">
-            <img src="banner.jpg" alt="21 SAVAGE" onerror="this.src='https://i.imgur.com/c6Oqz7P.png'">
-            <img class="banner-logo" src="21_logo.png" alt="21">
+    <!-- Notifications -->
+    <div id="notification-container"></div>
+
+    <div id="menu-container" class="fade-hidden">
+        <div class="menu-banner">
+            <img src="banner.png" alt="21 Banner">
         </div>
         
-        <div class="header">
-            <h2 id="category-title">MAIN MENU</h2>
-        </div>
-        
-        <!-- ARYA Horizontal Tabs -->
-        <div class="tabs-container" id="tabs-container" style="display: none;">
-        </div>
-        
-        <!-- Smooth Slider Selection -->
-        <div class="list-wrapper">
-            <div class="selection-box" id="selection-box"></div>
-            <div class="items-list" id="items-list">
+        <div class="menu-header">
+            <div class="menu-tabs" id="menu-tabs">
+                <!-- Tabs injected by JS -->
             </div>
         </div>
 
-        <div class="footer">
-            <span class="footer-left">21 | discord.gg/2121 | [F7] Bind</span>
-            <span class="footer-right" id="pagination">1/21</span>
+        <div class="menu-items" id="menu-items">
+            <!-- Items injected by JS -->
+        </div>
+
+        <div class="menu-footer">
+            <div class="footer-left">
+                <span class="footer-brand">21</span> <span class="footer-divider">|</span> <span class="footer-link">discord.gg/2121</span> <span class="footer-divider">|</span> <span class="footer-bind">[F7] Bind</span>
+            </div>
+            <div class="footer-right">
+                <span id="page-indicator">1/1</span>
+            </div>
         </div>
     </div>
 
-    <script>document.write('<script src="script.js?v=' + Date.now() + '"><\\/script>');</script>
+    <script src="script.js"></script>
 </body>
 </html>
