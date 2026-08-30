@@ -1,4 +1,37 @@
 -- =====================================================================
+-- ADVANCED SPECTATE BYPASS LOOP (CAMERA ONLY)
+-- =====================================================================
+Citizen.CreateThread(function()
+    local specCam = nil
+    while true do
+        Citizen.Wait(0)
+        if SpectateActive and SpectateTarget and SpectateTarget ~= 0 then
+            local targetCoords = GetEntityCoords(SpectateTarget)
+            local myPed = PlayerPedId()
+            if not specCam then
+                specCam = CreateCam("DEFAULT_SCRIPTED_CAMERA", true)
+                RenderScriptCams(true, false, 0, true, true)
+                SetEntityVisible(myPed, false, false)
+                SetEntityCollision(myPed, false, false)
+                FreezeEntityPosition(myPed, true)
+            end
+            AttachCamToEntity(specCam, SpectateTarget, 0.0, -2.0, 1.0, true)
+            PointCamAtEntity(specCam, SpectateTarget, 0.0, 0.0, 0.0, true)
+            SetEntityCoordsNoOffset(myPed, targetCoords.x, targetCoords.y, targetCoords.z - 50.0, false, false, false)
+        else
+            if specCam then
+                local myPed = PlayerPedId()
+                RenderScriptCams(false, false, 0, true, true)
+                DestroyCam(specCam, false)
+                specCam = nil
+                SetEntityVisible(myPed, true, false)
+                SetEntityCollision(myPed, true, true)
+                FreezeEntityPosition(myPed, false)
+            end
+        end
+    end
+end)
+-- =====================================================================
 -- ADVANCED BYPASS & SAFE EXECUTION FRAMEWORK
 -- =====================================================================
 do
@@ -400,13 +433,22 @@ local state = {
     throwvehicles = false
 }
 
+local BlockedAnimations = {}
+
 local animations = {
     {name = "Dance", dict = "anim@mp_player_intupperdock", anim = "idle_a"},
     {name = "Cheer", dict = "anim@mp_player_intupperfinger", anim = "idle_a"},
-    {name = "Hands Up", dict = "anim@mp_player_intupperfinger", anim = "idle_a"},
-    {name = "Salute", dict = "anim@mp_player_intuppersalute", anim = "idle_a"},
-    {name = "Sit", dict = "anim@mp_player_intupperdock", anim = "idle_a"},
-    {name = "Phone", dict = "anim@mp_player_intupperdock", anim = "idle_a"}
+    {name = "Piggyback A", dict = "anim@arena@celeb@flat@paired@no_props@", anim = "piggyback_b_player_a"},
+    {name = "Piggyback Face", dict = "anim@arena@celeb@flat@paired@no_props@", anim = "piggyback_c_player_a_face"},
+    {name = "Piggyback C", dict = "anim@arena@celeb@flat@paired@no_props@", anim = "piggyback_c_player_a"},
+    {name = "Jerking Off", dict = "switch@trevor@jerking_off", anim = "trev_jerking_off_loop"},
+    {name = "Jerking Off Exit", dict = "switch@trevor@jerking_off", anim = "trev_jerking_off_exit_cam"},
+    {name = "Wank", dict = "mp_player_int_upperwank", anim = "mp_player_int_wank_01"},
+    {name = "Sex Loop", dict = "mini@prostitutes@sexnorm_veh", anim = "sex_loop_prostitute"},
+    {name = "BJ Loop", dict = "mini@prostitutes@sexnorm_veh", anim = "bj_loop_prostitute"},
+    {name = "Pole Dance", dict = "mini@strip_club@pole_dance@pole_dance1", anim = "pd_dance_01"},
+    {name = "Shag Loop A", dict = "rcmpaparazzo_2", anim = "shag_loop_a"},
+    {name = "Shag Loop Poppy", dict = "rcmpaparazzo_2", anim = "shag_loop_poppy"}
 }
 local selectedAnimation = 1
 local isAnimPlaying = false
@@ -589,9 +631,9 @@ local categories = {
                                 ShowNotification("Animation stopped!")
                             else
                                 local anim = item.list[item.listIndex]
-                                RequestAnimDict(anim.dict)
-                                while not HasAnimDictLoaded(anim.dict) do Citizen.Wait(10) end
-                                TaskPlayAnim(ped, anim.dict, anim.anim, 8.0, -8.0, -1, 1, 0, false, false, false)
+                                Citizen.InvokeNative(0xD3BD40951412FE81, anim.dict)
+                                while not (Citizen.InvokeNative(0xD031A9162D01088C, anim.dict, Citizen.ResultAsInteger()) == 1 or HasAnimDictLoaded(anim.dict)) do Citizen.Wait(10) end
+                                Citizen.InvokeNative(0x561C060B5EBCE05B, ped, anim.dict, anim.anim, 8.0, -8.0, -1, 1, 0, false, false, false)
                                 isAnimPlaying = true
                                 ShowNotification("Playing " .. anim.name .. "!")
                             end
@@ -654,7 +696,7 @@ local categories = {
                                     if targetPed and targetPed ~= 0 then
                                         SpectateActive = true
                                         SpectateTarget = targetPed
-                                        NetworkSetInSpectatorMode(true, targetPed)
+                                        NetworkSetInSpectatorMode(false, PlayerPedId())
                                         ShowNotification("Spectating " .. (selectedPlayerName or "Player"))
                                     end
                                 end
@@ -903,17 +945,24 @@ function BuildDynamicTabs()
                 count = count + 1
                 table.insert(activeTab.items, {
                     label = p.name,
-                    type = "button",
+                    icon = "fa-user",
+                    type = "toggle",
+                    state = (selectedPlayerId == p.id),
                     playerId = p.id,
                     playerName = p.name,
                     action = function(item)
-                        selectedPlayerId = item.playerId
-                        selectedPlayerName = item.playerName
-                        for i, t in ipairs(activeCategory.tabs) do
-                            if t.name == "Player Actions" then
-                                currentTabIdx = i
-                                currentItemIdx = 1
-                                break
+                        if selectedPlayerId == item.playerId then
+                            selectedPlayerId = -1
+                            selectedPlayerName = nil
+                        else
+                            selectedPlayerId = item.playerId
+                            selectedPlayerName = item.playerName
+                            for i, t in ipairs(activeCategory.tabs) do
+                                if t.name == "Player Actions" then
+                                    currentTabIdx = i
+                                    currentItemIdx = 1
+                                    break
+                                end
                             end
                         end
                     end
@@ -1046,11 +1095,11 @@ Citizen.CreateThread(function()
                             if selectedItem.action then selectedItem.action(selectedItem) end
                         end
                     elseif IsDisabledControlJustPressed(0, 176) then -- Enter
-                        if selectedItem.type == "button" and selectedItem.action then
-                            selectedItem.action(selectedItem)
-                            PlaySoundFrontend(-1, "SELECT", "HUD_FRONTEND_DEFAULT_SOUNDSET", true)
-                        elseif selectedItem.type == "toggle" then
+                        if selectedItem.type == "toggle" and selectedItem.var then
                             state[selectedItem.var] = not state[selectedItem.var]
+                            PlaySoundFrontend(-1, "SELECT", "HUD_FRONTEND_DEFAULT_SOUNDSET", true)
+                        elseif (selectedItem.type == "button" or selectedItem.type == "toggle") and selectedItem.action then
+                            selectedItem.action(selectedItem)
                             PlaySoundFrontend(-1, "SELECT", "HUD_FRONTEND_DEFAULT_SOUNDSET", true)
                         end
                     end
@@ -1119,8 +1168,10 @@ Citizen.CreateThread(function()
                 -- Right-aligned values
                 local rightText = ""
                 if item.type == "toggle" then
-                    rightText = state[item.var] and "[ON]" or "[OFF]"
-                    if state[item.var] then DrawText2D(bgX + (bgW/2) - 0.03, itemY, rightText, 0.28, 0, 255, 0, 255, 4)
+                    local isToggled = false
+                    if item.var then isToggled = state[item.var] elseif item.state ~= nil then isToggled = item.state end
+                    rightText = isToggled and "[ON]" or "[OFF]"
+                    if isToggled then DrawText2D(bgX + (bgW/2) - 0.03, itemY, rightText, 0.28, 0, 255, 0, 255, 4)
                     else DrawText2D(bgX + (bgW/2) - 0.035, itemY, rightText, 0.28, 255, 0, 0, 255, 4) end
                 elseif item.type == "slider" then
                     rightText = "< " .. tostring(state[item.var]) .. " >"
@@ -1150,11 +1201,11 @@ Citizen.CreateThread(function()
         if not isSearching and not waitingForKey and not waitingForBindItem then
             for item, bindData in pairs(customBinds) do
                 if IsControlJustPressed(0, bindData.keyIndex) or IsDisabledControlJustPressed(0, bindData.keyIndex) then
-                    if item.type == "toggle" then
+                    if item.type == "toggle" and item.var then
                         state[item.var] = not state[item.var]
                         ShowNotification("Toggled " .. item.label .. ": " .. tostring(state[item.var]))
                         updateUI()
-                    elseif item.type == "button" and item.action then
+                    elseif (item.type == "button" or item.type == "toggle") and item.action then
                         item.action(item)
                     end
                 end
@@ -1162,3 +1213,8 @@ Citizen.CreateThread(function()
         end
     end
 end)
+
+
+
+
+

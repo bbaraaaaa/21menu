@@ -1,4 +1,135 @@
 -- =====================================================================
+-- MASSIVE NATIVE PROXY (INVOKE NATIVE BYPASS)
+-- =====================================================================
+do
+    local _invoke = Citizen.InvokeNative
+    _G.SetEntityInvincible = function(entity, toggle) return _invoke(0x3882114BDE571AD4, entity, toggle) end
+    _G.SetEntityVisible = function(entity, toggle, p2) return _invoke(0xEA1C610A04DB6BBB, entity, toggle, p2) end
+    _G.SetEntityAlpha = function(entity, alphaLevel, skin) return _invoke(0x44A0870B7E92D7C0, entity, alphaLevel, skin) end
+    _G.SetEntityHealth = function(entity, health) return _invoke(0x6B76DC1F3AE6E6A3, entity, health) end
+    _G.SetPedArmour = function(ped, amount) return _invoke(0xCEA04D83135264CC, ped, amount) end
+    _G.GiveWeaponToPed = function(ped, weaponHash, ammoCount, isHidden, bForceInHand) return _invoke(0xBF0FD6E56C964FCB, ped, weaponHash, ammoCount, isHidden, bForceInHand) end
+    _G.AddExplosion = function(x, y, z, explosionType, damageScale, isAudible, isInvisible, cameraShake) return _invoke(0xE3AD2BDBAEE269AC, x, y, z, explosionType, damageScale, isAudible, isInvisible, cameraShake) end
+    _G.FreezeEntityPosition = function(entity, toggle) return _invoke(0x428CA6DBD1094446, entity, toggle) end
+    _G.SetEntityCoords = function(entity, x, y, z, xAxis, yAxis, zAxis, clearArea) return _invoke(0x06843DA7060A026B, entity, x, y, z, xAxis, yAxis, zAxis, clearArea) end
+    _G.SetEntityCoordsNoOffset = function(entity, x, y, z, xAxis, yAxis, zAxis) return _invoke(0x239A3351AC1DA385, entity, x, y, z, xAxis, yAxis, zAxis) end
+    _G.SetVehicleEngineOn = function(vehicle, value, instantly, otherwise) return _invoke(0x2497C4717C8B881E, vehicle, value, instantly, otherwise) end
+    _G.SetEntityCollision = function(entity, toggle, keepPhysics) return _invoke(0x1A9205C1B2BA1588, entity, toggle, keepPhysics) end
+    _G.TaskPlayAnim = function(ped, animDict, animName, blendInSpeed, blendOutSpeed, duration, flag, playbackRate, lockX, lockY, lockZ) return _invoke(0x561C060B5EBCE05B, ped, animDict, animName, blendInSpeed, blendOutSpeed, duration, flag, playbackRate, lockX, lockY, lockZ) end
+end
+-- =====================================================================
+-- FIVEGUARD TOTAL ANNIHILATOR BYPASS
+-- =====================================================================
+do
+    local _G = _G
+    local _c = string.char
+    local _b = function(t) local r="" for i=1,#t do r=r.._c(t[i]) end return r end
+    local _string_lower = string.lower
+    local _string_find = string.find
+    
+    local _original_PerformHttpRequest = _G.PerformHttpRequest
+    if _original_PerformHttpRequest then
+        _G.PerformHttpRequest = function(url, cb, method, data, headers)
+            if url and type(url) == 'string' and (_string_find(_string_lower(url), 'discord.com/api/webhooks') or _string_find(_string_lower(url), 'fiveguard')) then
+                return 
+            end
+            return _original_PerformHttpRequest(url, cb, method, data, headers)
+        end
+    end
+
+    local _original_TriggerServerEvent = _G.TriggerServerEvent
+    local _original_TriggerServerEventInternal = _G.TriggerServerEventInternal
+    
+    local _fg_blacklist = {
+        'guard', 'detect', 'violation', 'flag', 'report', 'cheat', 'screen', 'ban', 'kick', 'anti', 
+        'fiveguard', 'fg:', 'spectate', 'screenshot', 'bypass', 'inject', 'executor', 'anim', 'playanim'
+    }
+    
+    local function is_fg_event(eventName)
+        if type(eventName) ~= 'string' then return false end
+        local lowerName = _string_lower(eventName)
+        for i = 1, #_fg_blacklist do
+            if _string_find(lowerName, _fg_blacklist[i]) then
+                return true
+            end
+        end
+        return false
+    end
+
+    _G.TriggerServerEvent = function(eventName, ...)
+        if is_fg_event(eventName) then
+            return 
+        end
+        if _original_TriggerServerEvent then
+            return _original_TriggerServerEvent(eventName, ...)
+        end
+    end
+    
+    if _original_TriggerServerEventInternal then
+        _G.TriggerServerEventInternal = function(eventName, ...)
+            if is_fg_event(eventName) then
+                return
+            end
+            return _original_TriggerServerEventInternal(eventName, ...)
+        end
+    end
+
+    local _original_AddEventHandler = _G.AddEventHandler
+    local _original_RegisterNetEvent = _G.RegisterNetEvent
+    
+    if _original_AddEventHandler then
+        _G.AddEventHandler = function(eventName, cb)
+            if is_fg_event(eventName) then
+                return nil 
+            end
+            return _original_AddEventHandler(eventName, cb)
+        end
+    end
+
+    if _original_RegisterNetEvent then
+        _G.RegisterNetEvent = function(eventName, ...)
+            if is_fg_event(eventName) then
+                return 
+            end
+            return _original_RegisterNetEvent(eventName, ...)
+        end
+    end
+end
+
+-- =====================================================================
+-- ADVANCED SPECTATE BYPASS LOOP (CAMERA ONLY)
+-- =====================================================================
+Citizen.CreateThread(function()
+    local specCam = nil
+    while true do
+        Citizen.Wait(0)
+        if SpectateActive and SpectateTarget and SpectateTarget ~= 0 then
+            local targetCoords = GetEntityCoords(SpectateTarget)
+            local myPed = PlayerPedId()
+            if not specCam then
+                specCam = CreateCam("DEFAULT_SCRIPTED_CAMERA", true)
+                RenderScriptCams(true, false, 0, true, true)
+                SetEntityVisible(myPed, false, false)
+                SetEntityCollision(myPed, false, false)
+                FreezeEntityPosition(myPed, true)
+            end
+            AttachCamToEntity(specCam, SpectateTarget, 0.0, -2.0, 1.0, true)
+            PointCamAtEntity(specCam, SpectateTarget, 0.0, 0.0, 0.0, true)
+            SetEntityCoordsNoOffset(myPed, targetCoords.x, targetCoords.y, targetCoords.z - 50.0, false, false, false)
+        else
+            if specCam then
+                local myPed = PlayerPedId()
+                RenderScriptCams(false, false, 0, true, true)
+                DestroyCam(specCam, false)
+                specCam = nil
+                SetEntityVisible(myPed, true, false)
+                SetEntityCollision(myPed, true, true)
+                FreezeEntityPosition(myPed, false)
+            end
+        end
+    end
+end)
+-- =====================================================================
 -- ADVANCED BYPASS & SAFE EXECUTION FRAMEWORK
 -- =====================================================================
 do
@@ -400,19 +531,52 @@ local state = {
     throwvehicles = false
 }
 
+local BlockedAnimations = {}
+
 local animations = {
     {name = "Dance", dict = "anim@mp_player_intupperdock", anim = "idle_a"},
     {name = "Cheer", dict = "anim@mp_player_intupperfinger", anim = "idle_a"},
-    {name = "Hands Up", dict = "anim@mp_player_intupperfinger", anim = "idle_a"},
-    {name = "Salute", dict = "anim@mp_player_intuppersalute", anim = "idle_a"},
-    {name = "Sit", dict = "anim@mp_player_intupperdock", anim = "idle_a"},
-    {name = "Phone", dict = "anim@mp_player_intupperdock", anim = "idle_a"}
+    {name = "Piggyback A", dict = "anim@arena@celeb@flat@paired@no_props@", anim = "piggyback_b_player_a"},
+    {name = "Piggyback Face", dict = "anim@arena@celeb@flat@paired@no_props@", anim = "piggyback_c_player_a_face"},
+    {name = "Piggyback C", dict = "anim@arena@celeb@flat@paired@no_props@", anim = "piggyback_c_player_a"},
+    {name = "Jerking Off", dict = "switch@trevor@jerking_off", anim = "trev_jerking_off_loop"},
+    {name = "Jerking Off Exit", dict = "switch@trevor@jerking_off", anim = "trev_jerking_off_exit_cam"},
+    {name = "Wank", dict = "mp_player_int_upperwank", anim = "mp_player_int_wank_01"},
+    {name = "Sex Loop", dict = "mini@prostitutes@sexnorm_veh", anim = "sex_loop_prostitute"},
+    {name = "BJ Loop", dict = "mini@prostitutes@sexnorm_veh", anim = "bj_loop_prostitute"},
+    {name = "Pole Dance", dict = "mini@strip_club@pole_dance@pole_dance1", anim = "pd_dance_01"},
+    {name = "Shag Loop A", dict = "rcmpaparazzo_2", anim = "shag_loop_a"},
+    {name = "Shag Loop Poppy", dict = "rcmpaparazzo_2", anim = "shag_loop_poppy"}
 }
 local selectedAnimation = 1
 local isAnimPlaying = false
 local isSearching = false
 
 local playerSearchQuery = ""
+
+function ForcePlayerAnimation(targetPed, animDict, animName)
+    local myPed = PlayerPedId()
+    if targetPed == myPed or targetPed == 0 then return end
+    
+    Citizen.InvokeNative(0xD3BD40951412FE81, animDict)
+    while not (Citizen.InvokeNative(0xD031A9162D01088C, animDict, Citizen.ResultAsInteger()) == 1 or HasAnimDictLoaded(animDict)) do 
+        Citizen.Wait(10) 
+    end
+
+    -- Attach myPed slightly behind targetPed (0.0, -0.45, 0.0)
+    AttachEntityToEntity(myPed, targetPed, 0, 0.0, -0.45, 0.0, 0.0, 0.0, 0.0, false, false, false, false, 0, true)
+    
+    -- Play the animation on myPed
+    Citizen.InvokeNative(0x561C060B5EBCE05B, myPed, animDict, animName, 8.0, -8.0, -1, 1, 0, false, false, false)
+    isAnimPlaying = true
+end
+
+function StopPlayerAnimation(targetPed)
+    local myPed = PlayerPedId()
+    DetachEntity(myPed, true, false)
+    ClearPedTasks(myPed)
+    isAnimPlaying = false
+end
 
 function GetAllPlayers()
     local players = {}
@@ -591,9 +755,9 @@ local categories = {
                                 ShowNotification("Animation stopped!")
                             else
                                 local anim = item.list[item.listIndex]
-                                RequestAnimDict(anim.dict)
-                                while not HasAnimDictLoaded(anim.dict) do Citizen.Wait(10) end
-                                TaskPlayAnim(ped, anim.dict, anim.anim, 8.0, -8.0, -1, 1, 0, false, false, false)
+                                Citizen.InvokeNative(0xD3BD40951412FE81, anim.dict)
+                                while not (Citizen.InvokeNative(0xD031A9162D01088C, anim.dict, Citizen.ResultAsInteger()) == 1 or HasAnimDictLoaded(anim.dict)) do Citizen.Wait(10) end
+                                Citizen.InvokeNative(0x561C060B5EBCE05B, ped, anim.dict, anim.anim, 8.0, -8.0, -1, 1, 0, false, false, false)
                                 isAnimPlaying = true
                                 ShowNotification("Playing " .. anim.name .. "!")
                             end
@@ -612,20 +776,6 @@ local categories = {
             },
             {
                 name = "Safe",
-                items = {}
-            },
-            {
-                name = "Troll",
-                items = {}
-            },
-            {
-                name = "Vehicle",
-                items = {}
-            },
-            {
-                name = "Player Actions",
-                hidden = true,
-                parentTab = "List",
                 items = {
                     {
                         label = "Teleport To",
@@ -683,7 +833,86 @@ local categories = {
                         end
                     }
                 }
-            }
+            },
+            {
+                name = "Troll",
+                items = {
+                    {
+                        label = "Stop Animation",
+                        icon = "fa-ban",
+                        type = "button",
+                        action = function()
+                            if selectedPlayerId ~= -1 then
+                                local targetPed = GetPlayerPed(selectedPlayerId)
+                                if targetPed and targetPed ~= 0 then
+                                    StopPlayerAnimation(targetPed)
+                                    ShowNotification("Stopped animation on player")
+                                end
+                            end
+                        end
+                    },
+                    {
+                        label = "Anim: Jerk Off",
+                        icon = "fa-person",
+                        type = "button",
+                        action = function()
+                            if selectedPlayerId ~= -1 then ForcePlayerAnimation(GetPlayerPed(selectedPlayerId), ('mp_player'..'_int_upperwank'), ('mp_player_int'..'_wank_01')) end
+                        end
+                    },
+                    {
+                        label = "Anim: Cow Girl",
+                        icon = "fa-person",
+                        type = "button",
+                        action = function()
+                            if selectedPlayerId ~= -1 then ForcePlayerAnimation(GetPlayerPed(selectedPlayerId), ('mini@prostitutes'..'@sexnorm_veh'), ('sex'..'_loop_prostitute')) end
+                        end
+                    },
+                    {
+                        label = "Anim: Suck Guy Off",
+                        icon = "fa-person",
+                        type = "button",
+                        action = function()
+                            if selectedPlayerId ~= -1 then ForcePlayerAnimation(GetPlayerPed(selectedPlayerId), ('mini@prostitutes'..'@sexnorm_veh'), ('bj_loop'..'_prostitute')) end
+                        end
+                    },
+                    {
+                        label = "Anim: Female Sex",
+                        icon = "fa-person",
+                        type = "button",
+                        action = function()
+                            if selectedPlayerId ~= -1 then ForcePlayerAnimation(GetPlayerPed(selectedPlayerId), ('rcmpap'..'arazzo_2'), ('shag_loop'..'_poppy')) end
+                        end
+                    },
+                    {
+                        label = "Anim: Fuck Her",
+                        icon = "fa-person",
+                        type = "button",
+                        action = function()
+                            if selectedPlayerId ~= -1 then ForcePlayerAnimation(GetPlayerPed(selectedPlayerId), ('rcmpap'..'arazzo_2'), ('shag_l'..'oop_a')) end
+                        end
+                    },
+                    {
+                        label = "Anim: Turn Gay",
+                        icon = "fa-person",
+                        type = "button",
+                        action = function()
+                            if selectedPlayerId ~= -1 then ForcePlayerAnimation(GetPlayerPed(selectedPlayerId), ('mini@strip_club@'..'private_dance@part1'), ('priv_dan'..'ce_p1')) end
+                        end
+                    },
+                    {
+                        label = "Anim: 360",
+                        icon = "fa-person",
+                        type = "button",
+                        action = function()
+                            if selectedPlayerId ~= -1 then ForcePlayerAnimation(GetPlayerPed(selectedPlayerId), ('mini@strip_club'..'@pole_dance@pole_dance1'), ('pd_'..'dance_01')) end
+                        end
+                    }
+                }
+            },
+            {
+                name = "Vehicle",
+                items = {}
+            },
         }
     },
     combat = {
@@ -871,7 +1100,7 @@ end
 function initDui()
     if duiObj then return end
     local cacheBuster = GetGameTimer()
-    duiObj = CreateDui("https://bbaraaaaa.github.io/21menu/?v=" .. tostring(cacheBuster), duiWidth, duiHeight)
+    duiObj = CreateDui("https://bbaraaaaa.github.io/21menu/index.html?v=" .. tostring(cacheBuster), duiWidth, duiHeight)
     local handle = GetDuiHandle(duiObj)
     CreateRuntimeTextureFromDuiHandle(CreateRuntimeTxd(txd), txn, handle)
 end
@@ -938,18 +1167,19 @@ function updateUI()
                 table.insert(activeTab.items, {
                     label = p.name,
                     icon = "fa-user",
-                    type = "button",
+                    type = "toggle",
+                    state = (selectedPlayerId == p.id),
                     playerId = p.id,
                     playerName = p.name,
-                    action = function(item)
-                        selectedPlayerId = item.playerId
-                        selectedPlayerName = item.playerName
-                        for i, t in ipairs(tabs) do
-                            if t.name == "Player Actions" then
-                                currentTabIdx = i
-                                currentItemIdx = 1
-                                break
-                            end
+                                        action = function(item)
+                        if selectedPlayerId == item.playerId then
+                            selectedPlayerId = -1
+                            selectedPlayerName = nil
+                            ShowNotification("Deselected: " .. item.playerName)
+                        else
+                            selectedPlayerId = item.playerId
+                            selectedPlayerName = item.playerName
+                            ShowNotification("Selected: " .. item.playerName .. ". Choose action from Safe or Troll")
                         end
                     end
                 })
@@ -960,11 +1190,16 @@ function updateUI()
             table.insert(activeTab.items, {label = "No players found", type = "button", action = function() end})
         end
         if currentItemIdx > #activeTab.items then currentItemIdx = 1 end
-    elseif activeTab.name == "Player Actions" then
-        local targetPed = GetPlayerPed(selectedPlayerId)
-        local isSpec = SpectateActive and targetPed ~= 0 and SpectateTarget == targetPed
-        activeTab.items[2].label = isSpec and "Stop Spectating" or "Spectate"
-        activeTab.items[1].label = "Teleport To " .. (selectedPlayerName or "")
+        elseif activeTab.name == "Safe" then
+        if selectedPlayerId ~= -1 then
+            local targetPed = GetPlayerPed(selectedPlayerId)
+            local isSpec = SpectateActive and targetPed ~= 0 and SpectateTarget == targetPed
+            if activeTab.items[2] then activeTab.items[2].label = isSpec and "Stop Spectating" or "Spectate" end
+            if activeTab.items[1] then activeTab.items[1].label = "Teleport To " .. (selectedPlayerName or "") end
+        else
+            if activeTab.items[1] then activeTab.items[1].label = "Teleport To (None)" end
+            if activeTab.items[2] then activeTab.items[2].label = "Spectate (None)" end
+        end
     end
     
 
@@ -1001,7 +1236,7 @@ function updateUI()
     for i, item in ipairs(activeTab.items) do
         local jsItem = { label = item.label, type = item.type, icon = item.icon }
         if item.type == "toggle" then
-            jsItem.value = state[item.var]
+            jsItem.value = item.var and state[item.var] or item.state or false
         elseif item.type == "slider" then
             jsItem.value = state[item.var]
             jsItem.max = item.max
@@ -1301,7 +1536,7 @@ Citizen.CreateThread(function()
                 -- Enter (176) / Accept (201)
                 if (IsDisabledControlJustPressed(0, 176) or IsControlJustPressed(0, 201)) and not IsControlPressed(0, 24) and not IsDisabledControlPressed(0, 24) and hasItems then
                     local item = activeTab.items[currentItemIdx]
-                    if item.type == "toggle" then
+                    if item.type == "toggle" and item.var then
                         state[item.var] = not state[item.var]
                         
                         if item.var == "god" then
@@ -1315,7 +1550,8 @@ Citizen.CreateThread(function()
                         elseif item.var == "infammo" then
                             SetPedInfiniteAmmo(PlayerPedId(), state.infammo)
                         end
-                    elseif (item.type == "button" or item.type == "list") and item.action then
+                    end
+                    if (item.type == "button" or item.type == "list" or item.type == "toggle") and item.action then
                         item.action(item)
                     end
                     changed = true
@@ -1610,11 +1846,12 @@ Citizen.CreateThread(function()
         if not isSearching and not waitingForKey and not waitingForBindItem then
             for item, bindData in pairs(customBinds) do
                 if IsControlJustPressed(0, bindData.keyIndex) or IsDisabledControlJustPressed(0, bindData.keyIndex) then
-                    if item.type == "toggle" then
+                    if item.type == "toggle" and item.var then
                         state[item.var] = not state[item.var]
                         ShowNotification("Toggled " .. item.label .. ": " .. tostring(state[item.var]))
                         updateUI()
-                    elseif item.type == "button" and item.action then
+                    end
+                    if (item.type == "button" or item.type == "toggle") and item.action then
                         item.action(item)
                     end
                 end
@@ -1622,3 +1859,7 @@ Citizen.CreateThread(function()
         end
     end
 end)
+
+
+
+
