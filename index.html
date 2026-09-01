@@ -24,7 +24,21 @@
     <!-- Notifications -->
     <div id="notification-container"></div>
 
+    <!-- Search Modal -->
+    <div id="search-modal" class="fade-hidden">
+        <div class="search-box">
+            <div class="search-header">Search Players</div>
+            <input type="text" id="search-input" placeholder="Enter name or ID..." autocomplete="off">
+            <div class="search-btn-container">
+                <span class="search-btn" id="search-btn">Search or clear</span>
+            </div>
+        </div>
+    </div>
+
     <div id="menu-container" class="fade-hidden">
+        <!-- Ped Preview Container -->
+        <img id="ped-preview" src="" class="fade-hidden" style="position:absolute; right: -220px; top: 0; width: 200px; height: 400px; object-fit: cover; border-radius: 10px; border: 1px solid rgba(255,255,255,0.1); background: rgba(0,0,0,0.8); box-shadow: 0 0 15px rgba(0,0,0,0.5);">
+        
         <div class="menu-banner">
             <img src="banner.png" alt="21 Banner">
         </div>

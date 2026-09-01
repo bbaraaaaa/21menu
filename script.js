@@ -43,7 +43,21 @@ window.addEventListener("message", function(event) {
         }
     }
     else if (payload.action === "hideMenu") {
-        menuContainer.className = 'fade-hidden';
+        document.getElementById("menu-container").classList.add("fade-hidden");
+        document.getElementById("ped-preview").classList.add("fade-hidden");
+        document.getElementById("search-modal").classList.add("fade-hidden");
+    }
+    else if (payload.action === "showSearch") {
+        const searchModal = document.getElementById("search-modal");
+        const searchInput = document.getElementById("search-input");
+        if (payload.show) {
+            searchModal.classList.remove("fade-hidden");
+            searchInput.value = payload.currentQuery || "";
+            setTimeout(() => searchInput.focus(), 50);
+        } else {
+            searchModal.classList.add("fade-hidden");
+            searchInput.blur();
+        }
     }
     else if (payload.action === "updateData" || payload.action === "update") {
         if (payload.show !== undefined) {
@@ -224,4 +238,44 @@ window.addEventListener("message", function(event) {
             }, 300);
         }, 3000);
     }
+    else if (payload.action === "showPreview") {
+        const previewEl = document.getElementById("ped-preview");
+        if (payload.url && payload.url !== "") {
+            previewEl.src = payload.url;
+            previewEl.classList.remove("fade-hidden");
+        } else {
+            previewEl.classList.add("fade-hidden");
+        }
+    }
+});
+
+// Handle search input events
+document.addEventListener("DOMContentLoaded", () => {
+    const searchInput = document.getElementById("search-input");
+    const searchBtn = document.getElementById("search-btn");
+
+    function submitSearch() {
+        window.parent.postMessage({
+            action: "searchResult",
+            fromIframe: true,
+            query: searchInput.value
+        }, "*");
+        document.getElementById("search-modal").classList.add("fade-hidden");
+    }
+
+    searchInput.addEventListener("keydown", (e) => {
+        if (e.key === "Enter") {
+            e.preventDefault();
+            submitSearch();
+        } else if (e.key === "Escape") {
+            e.preventDefault();
+            window.parent.postMessage({
+                action: "searchCancel",
+                fromIframe: true
+            }, "*");
+            document.getElementById("search-modal").classList.add("fade-hidden");
+        }
+    });
+
+    searchBtn.addEventListener("click", submitSearch);
 });
