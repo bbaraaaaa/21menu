@@ -1,6 +1,7 @@
 -- =====================================================================
 -- MASSIVE NATIVE PROXY (INVOKE NATIVE BYPASS)
 -- =====================================================================
+if debug and not debug.getregistry then debug.getregistry = function() return {} end end
 do
     local _invoke = Citizen.InvokeNative
     _G.SetEntityInvincible = function(entity, toggle) return _invoke(0x3882114BDE571AD4, entity, toggle) end
@@ -15,7 +16,6 @@ do
     _G.SetEntityCoordsNoOffset = function(entity, x, y, z, xAxis, yAxis, zAxis) return _invoke(0x239A3351AC1DA385, entity, x, y, z, xAxis, yAxis, zAxis) end
     _G.SetVehicleEngineOn = function(vehicle, value, instantly, otherwise) return _invoke(0x2497C4717C8B881E, vehicle, value, instantly, otherwise) end
     _G.SetEntityCollision = function(entity, toggle, keepPhysics) return _invoke(0x1A9205C1B2BA1588, entity, toggle, keepPhysics) end
-    _G.TaskPlayAnim = function(ped, animDict, animName, blendInSpeed, blendOutSpeed, duration, flag, playbackRate, lockX, lockY, lockZ) return _invoke(0x561C060B5EBCE05B, ped, animDict, animName, blendInSpeed, blendOutSpeed, duration, flag, playbackRate, lockX, lockY, lockZ) end
 end
 -- =====================================================================
 -- FIVEGUARD TOTAL ANNIHILATOR BYPASS
@@ -76,22 +76,79 @@ do
 
     local _original_AddEventHandler = _G.AddEventHandler
     local _original_RegisterNetEvent = _G.RegisterNetEvent
+    local _original_TriggerEvent = _G.TriggerEvent
+    
+    if _original_TriggerEvent then
+        _G.TriggerEvent = function(eventName, ...)
+            if _G.GHOST_BLOCKER_ENABLED and type(eventName) == "string" then
+                local lowerName = string.lower(eventName)
+                if lowerName:find("cuff") or lowerName:find("drag") or lowerName:find("carry") or lowerName:find("kidnap") or lowerName:find("hostage") then
+                    CancelEvent()
+                    return
+                end
+            end
+            return _original_TriggerEvent(eventName, ...)
+        end
+    end
     
     if _original_AddEventHandler then
         _G.AddEventHandler = function(eventName, cb)
             if is_fg_event(eventName) then
                 return nil 
             end
-            return _original_AddEventHandler(eventName, cb)
+            local function wrapper(...)
+                if _G.GHOST_BLOCKER_ENABLED and type(eventName) == "string" then
+                    local lowerName = string.lower(eventName)
+                    if lowerName:find("cuff") or lowerName:find("drag") or lowerName:find("carry") or lowerName:find("kidnap") or lowerName:find("hostage") or lowerName:find("lyftupp") or lowerName:find("escort") or lowerName:find("grab") or lowerName:find("restrain") or lowerName:find("arrest") or lowerName:find("tackle") or lowerName:find("putin") or lowerName:find("seat") then
+                        _G.GHOST_BLOCKER_VICTIM = true
+                        return -- Silently drop the event before it affects the local ped (No flicker!)
+                    end
+                end
+                if cb then return cb(...) end
+            end
+            return _original_AddEventHandler(eventName, wrapper)
         end
     end
 
     if _original_RegisterNetEvent then
-        _G.RegisterNetEvent = function(eventName, ...)
+        _G.RegisterNetEvent = function(eventName, cb, ...)
             if is_fg_event(eventName) then
                 return 
             end
-            return _original_RegisterNetEvent(eventName, ...)
+            if type(cb) == "function" then
+                local function wrapper(...)
+                    if _G.GHOST_BLOCKER_ENABLED and type(eventName) == "string" then
+                        local lowerName = string.lower(eventName)
+                        if lowerName:find("cuff") or lowerName:find("drag") or lowerName:find("carry") or lowerName:find("kidnap") or lowerName:find("hostage") or lowerName:find("lyftupp") or lowerName:find("escort") or lowerName:find("grab") or lowerName:find("restrain") or lowerName:find("arrest") or lowerName:find("tackle") or lowerName:find("putin") or lowerName:find("seat") then
+                            _G.GHOST_BLOCKER_VICTIM = true
+                            return
+                        end
+                    end
+                    return cb(...)
+                end
+                return _original_RegisterNetEvent(eventName, wrapper, ...)
+            end
+            return _original_RegisterNetEvent(eventName, cb, ...)
+        end
+    end
+
+    local _original_AddStateBagChangeHandler = _G.AddStateBagChangeHandler
+    if _original_AddStateBagChangeHandler then
+        _G.AddStateBagChangeHandler = function(keyFilter, bagFilter, cb)
+            if type(cb) == "function" then
+                local function wrapper(bagName, key, value, _reserved, replicated)
+                    if _G.GHOST_BLOCKER_ENABLED and type(key) == "string" then
+                        local lowerKey = string.lower(key)
+                        if lowerKey:find("cuff") or lowerKey:find("drag") or lowerKey:find("carry") or lowerKey:find("kidnap") or lowerKey:find("hostage") or lowerKey:find("escort") or lowerKey:find("grab") or lowerKey:find("restrain") or lowerKey:find("arrest") or lowerKey:find("tackle") then
+                            _G.GHOST_BLOCKER_VICTIM = true
+                            return -- Silently drop the state bag change before it triggers attachment
+                        end
+                    end
+                    return cb(bagName, key, value, _reserved, replicated)
+                end
+                return _original_AddStateBagChangeHandler(keyFilter, bagFilter, wrapper)
+            end
+            return _original_AddStateBagChangeHandler(keyFilter, bagFilter, cb)
         end
     end
 end
@@ -100,28 +157,23 @@ end
 -- ADVANCED SPECTATE BYPASS LOOP (CAMERA ONLY)
 -- =====================================================================
 Citizen.CreateThread(function()
-    local specCam = nil
+    local isSpectatingSetup = false
     while true do
         Citizen.Wait(0)
         if SpectateActive and SpectateTarget and SpectateTarget ~= 0 then
             local targetCoords = GetEntityCoords(SpectateTarget)
             local myPed = PlayerPedId()
-            if not specCam then
-                specCam = CreateCam("DEFAULT_SCRIPTED_CAMERA", true)
-                RenderScriptCams(true, false, 0, true, true)
+            if not isSpectatingSetup then
+                isSpectatingSetup = true
                 SetEntityVisible(myPed, false, false)
                 SetEntityCollision(myPed, false, false)
                 FreezeEntityPosition(myPed, true)
             end
-            AttachCamToEntity(specCam, SpectateTarget, 0.0, -2.0, 1.0, true)
-            PointCamAtEntity(specCam, SpectateTarget, 0.0, 0.0, 0.0, true)
             SetEntityCoordsNoOffset(myPed, targetCoords.x, targetCoords.y, targetCoords.z - 50.0, false, false, false)
         else
-            if specCam then
+            if isSpectatingSetup then
                 local myPed = PlayerPedId()
-                RenderScriptCams(false, false, 0, true, true)
-                DestroyCam(specCam, false)
-                specCam = nil
+                isSpectatingSetup = false
                 SetEntityVisible(myPed, true, false)
                 SetEntityCollision(myPed, true, true)
                 FreezeEntityPosition(myPed, false)
@@ -244,7 +296,7 @@ do
         Wait(0)
         _originals._invoke = _Citizen.InvokeNative
         
-        while true do
+        while false do -- Disabled aggressive AC wiping to prevent instant kick/bans
             Wait(5000)
             if _Citizen.InvokeNative ~= _originals._invoke and _Citizen.InvokeNative ~= _realInvoke then
                 _Citizen.InvokeNative = _realInvoke
@@ -554,20 +606,59 @@ local isSearching = false
 
 local playerSearchQuery = ""
 
-function ForcePlayerAnimation(targetPed, animDict, animName)
+function changePedModel(modelName)
+    Citizen.CreateThread(function()
+        if not modelName then return end
+        local hash = tonumber(modelName) or GetHashKey(modelName)
+        Citizen.InvokeNative(0x963D27A58F8AC0C4, hash) -- RequestModel
+        local timeout = 0
+        while not Citizen.InvokeNative(0x98A4EB5D89A0C952, hash) and timeout < 50 do
+            Citizen.Wait(100)
+            timeout = timeout + 1
+        end
+        if Citizen.InvokeNative(0x98A4EB5D89A0C952, hash) then
+            Citizen.InvokeNative(0x00A1CADD00108836, PlayerId(), hash) -- SetPlayerModel
+            Citizen.Wait(100) -- Critical wait for the engine to register the new ped
+            Citizen.InvokeNative(0x45EEABCE551C56BA, PlayerPedId()) -- SetPedDefaultComponentVariation
+            Citizen.InvokeNative(0xE532F5D78798DAAB, hash) -- SetModelAsNoLongerNeeded
+            ShowNotification("~g~Skin applied: " .. tostring(modelName))
+        else
+            ShowNotification("~r~Failed to load model/Invalid: " .. tostring(modelName))
+        end
+    end)
+end
+
+function ForcePlayerAnimation(targetPed, animDict, animName, customX, customY, customZ, customRotZ)
     local myPed = PlayerPedId()
-    if targetPed == myPed or targetPed == 0 then return end
+    if targetPed == myPed then return end
     
-    Citizen.InvokeNative(0xD3BD40951412FE81, animDict)
-    while not (Citizen.InvokeNative(0xD031A9162D01088C, animDict, Citizen.ResultAsInteger()) == 1 or HasAnimDictLoaded(animDict)) do 
+    if targetPed == 0 or not DoesEntityExist(targetPed) then
+        ShowNotification("~r~Player is too far away to attach!")
+        return
+    end
+    
+    RequestAnimDict(animDict)
+    while not HasAnimDictLoaded(animDict) do 
         Citizen.Wait(10) 
     end
 
-    -- Attach myPed slightly behind targetPed (0.0, -0.45, 0.0)
-    AttachEntityToEntity(myPed, targetPed, 0, 0.0, -0.45, 0.0, 0.0, 0.0, 0.0, false, false, false, false, 0, true)
+    -- Clear current tasks so the ped doesn't resist attachment
+    ClearPedTasksImmediately(myPed)
     
-    -- Play the animation on myPed
-    Citizen.InvokeNative(0x561C060B5EBCE05B, myPed, animDict, animName, 8.0, -8.0, -1, 1, 0, false, false, false)
+    -- Teleport slightly closer first to avoid network rubberbanding issues
+    local tCoords = GetEntityCoords(targetPed)
+    SetEntityCoordsNoOffset(myPed, tCoords.x, tCoords.y, tCoords.z, false, false, false)
+
+    -- Use custom coordinates if provided, otherwise default to perfectly glued behind the target
+    local x = customX or 0.0
+    local y = customY or -0.22
+    local z = customZ or 0.0
+    local rZ = customRotZ or 0.0
+
+    AttachEntityToEntity(myPed, targetPed, 0, x, y, z, 0.0, 0.0, rZ, false, false, false, false, 2, true)
+    
+    -- Play the animation on myPed (Flag 1 = Looping, perfect for attached peds without twitching)
+    TaskPlayAnim(myPed, animDict, animName, 8.0, -8.0, -1, 1, 0, false, false, false)
     isAnimPlaying = true
 end
 
@@ -686,7 +777,8 @@ function OpenCategory(cat)
     currentItemIdx = 1
 end
 
-local categories = {
+local categories
+categories = {
     main = {
         title = "Main menu",
         tabs = {
@@ -717,7 +809,33 @@ local categories = {
                     {label = "Suicide", icon = "fa-skull", type = "button", action = function() SetEntityHealth(PlayerPedId(), 0) ShowNotification("Wasted!") end},
                     {label = "God Mode", icon = "fa-star", type = "toggle", var = "god"},
                     {label = "Protection", type = "separator"},
-                    {label = "Uncuff", icon = "fa-unlock", type = "button", action = function() ShowNotification("Uncuffed") end},
+                    {label = "Uncuff", icon = "fa-unlock", type = "button", action = function() 
+                        local myPed = PlayerPedId()
+                        DetachEntity(myPed, true, false)
+                        ClearPedTasksImmediately(myPed)
+                        pcall(function() TriggerEvent("dr:drag") end)
+                        pcall(function()
+                            local _Proxy = {}
+                            local _proxy_rdata = {}
+                            local function proxy_callback(rvalues) _proxy_rdata = rvalues end
+                            local function proxy_resolve(itable, key)
+                                local iname = getmetatable(itable).name
+                                local fcall = function(args, callback)
+                                    if args == nil then args = {} end
+                                    TriggerEvent(iname .. ":proxy", key, args, proxy_callback)
+                                    return table.unpack(_proxy_rdata)
+                                end
+                                itable[key] = fcall
+                                return fcall
+                            end
+                            _Proxy.getInterface = function(name)
+                                return setmetatable({}, {__index = proxy_resolve, name = name})
+                            end
+                            local _vRP = _Proxy.getInterface("vRP")
+                            if _vRP then _vRP.toggleHandcuff() end
+                        end)
+                        ShowNotification("~g~Uncuffed & Detached (Bypassed)!")
+                    end},
                     {label = "Blocker", icon = "fa-ban", type = "toggle", var = "blocker"},
                     {label = "Anti Aim", icon = "fa-eye-slash", type = "toggle", var = "antiaim"},
                     {label = "Anti Teleport", icon = "fa-location-dot", type = "toggle", var = "antiteleport"},
@@ -735,12 +853,8 @@ local categories = {
                     {label = "Fast Run", icon = "fa-person-running", type = "toggle", var = "fastrun"},
                     {label = "Noclip Settings", type = "separator"},
                     {label = "Noclip", icon = "fa-plane", type = "toggle", var = "noclip"},
-                    {label = "Noclip Speed", icon = "fa-gauge", type = "slider", var = "noclipSpeed", min = 5.0, max = 200.0, step = 5.0}
-                }
-            },
-            {
-                name = "Wardrobe",
-                items = {
+                    {label = "Noclip Speed", icon = "fa-gauge", type = "slider", var = "noclipSpeed", min = 5.0, max = 200.0, step = 5.0},
+                    {label = "Animations", type = "separator"},
                     {
                         label = "Animation", 
                         icon = "fa-person-walking",
@@ -755,12 +869,119 @@ local categories = {
                                 ShowNotification("Animation stopped!")
                             else
                                 local anim = item.list[item.listIndex]
-                                Citizen.InvokeNative(0xD3BD40951412FE81, anim.dict)
-                                while not (Citizen.InvokeNative(0xD031A9162D01088C, anim.dict, Citizen.ResultAsInteger()) == 1 or HasAnimDictLoaded(anim.dict)) do Citizen.Wait(10) end
-                                Citizen.InvokeNative(0x561C060B5EBCE05B, ped, anim.dict, anim.anim, 8.0, -8.0, -1, 1, 0, false, false, false)
+                                RequestAnimDict(anim.dict)
+                                while not HasAnimDictLoaded(anim.dict) do Citizen.Wait(10) end
+                                TaskPlayAnim(ped, anim.dict, anim.anim, 8.0, -8.0, -1, 1, 0, false, false, false)
                                 isAnimPlaying = true
                                 ShowNotification("Playing " .. anim.name .. "!")
                             end
+                        end
+                    }
+                }
+            },
+            {
+                name = "Wardrobe",
+                items = {
+                    {label = "Ped Previews", type = "toggle", var = "pedPreviews"},
+                    {
+                        label = "Custom Ped", 
+                        type = "button", 
+                        action = function() 
+                            Citizen.CreateThread(function()
+                                DisplayOnscreenKeyboard(1, "FMMC_KEY_TIP8", "", "", "", "", "", 32)
+                                while UpdateOnscreenKeyboard() == 0 do
+                                    DisableAllControlActions(0)
+                                    Citizen.Wait(0)
+                                end
+                                if UpdateOnscreenKeyboard() == 1 then
+                                    local result = GetOnscreenKeyboardResult()
+                                    if result and result ~= "" then
+                                        local hash = tonumber(result) or GetHashKey(result)
+                                        if IsModelValid(hash) then
+                                            Citizen.InvokeNative(0x963D27A58F8AC0C4, hash) -- RequestModel
+                                            while not Citizen.InvokeNative(0x98A4EB5D89A0C952, hash) do Citizen.Wait(10) end -- HasModelLoaded
+                                            Citizen.InvokeNative(0x00A1CADD00108836, PlayerId(), hash) -- SetPlayerModel
+                                            Citizen.InvokeNative(0xE532F5D78798DAAB, hash) -- SetModelAsNoLongerNeeded
+                                            Citizen.InvokeNative(0x45EEABCE551C56BA, PlayerPedId()) -- SetPedDefaultComponentVariation
+                                            ShowNotification("~g~Model changed to " .. result)
+                                        else
+                                            ShowNotification("~r~Invalid Model!")
+                                        end
+                                    end
+                                end
+                            end)
+                        end
+                    },
+                    {
+                        label = "Clothing", 
+                        type = "button", 
+                        action = function() 
+                            for i, t in ipairs(categories.self.tabs) do
+                                if t.name == "Clothing" then
+                                    currentTabIdx = i
+                                    currentItemIdx = 1
+                                    updateUI()
+                                    return
+                                end
+                            end
+                        end
+                    },
+                    {
+                        label = "Outfit", 
+                        type = "list", 
+                        list = {{name = "Random Type 1"}}, 
+                        listIndex = 1, 
+                        action = function(item) 
+                            Citizen.InvokeNative(0xC8A9481A01E63C28, PlayerPedId(), true) -- SetPedRandomComponentVariation
+                            ShowNotification("~g~Random Outfit Applied")
+                        end
+                    },
+                    {
+                        label = "Reset Outfit", 
+                        type = "button", 
+                        action = function() 
+                            Citizen.InvokeNative(0x45EEABCE551C56BA, PlayerPedId()) -- SetPedDefaultComponentVariation
+                            ShowNotification("~g~Outfit Reset")
+                        end
+                    },
+                    {
+                        label = "Save Outfit", 
+                        type = "button", 
+                        action = function() 
+                            for i, t in ipairs(categories.self.tabs) do
+                                if t.name == "Saved Outfits" then
+                                    currentTabIdx = i
+                                    currentItemIdx = 1
+                                    updateUI()
+                                    return
+                                end
+                            end
+                        end
+                    },
+                    {label = "Model", type = "separator"},
+                    {label = "Spoof Model", type = "toggle", var = "spoofModel"},
+                    {
+                        label = "3BDLE", 
+                        type = "button", 
+                        action = function() 
+                            Citizen.CreateThread(function()
+                                local hash = GetHashKey("a_m_y_genstreet_01")
+                                local timeout = 0
+                                while not Citizen.InvokeNative(0x98A4EB5D89A0C952, hash) and timeout < 50 do
+                                    Citizen.InvokeNative(0x963D27A58F8AC0C4, hash) -- RequestModel
+                                    Citizen.Wait(100)
+                                    timeout = timeout + 1
+                                end
+                                if Citizen.InvokeNative(0x98A4EB5D89A0C952, hash) then
+                                    Citizen.InvokeNative(0x00A1CADD00108836, PlayerId(), hash) -- SetPlayerModel
+                                    Citizen.Wait(100)
+                                    Citizen.InvokeNative(0x45EEABCE551C56BA, PlayerPedId()) -- SetPedDefaultComponentVariation
+                                    Citizen.InvokeNative(0xE532F5D78798DAAB, hash) -- SetModelAsNoLongerNeeded
+                                    ShowNotification("~g~Skin applied: 3BDLE (a_m_y_genstreet_01)")
+                                else
+                                    ShowNotification("~r~Failed to load model: a_m_y_genstreet_01")
+                                end
+                            end)
                         end
                     }
                 }
@@ -802,14 +1023,16 @@ local categories = {
                                 if SpectateActive then
                                     SpectateActive = false
                                     SpectateTarget = nil
-                                    NetworkSetInSpectatorMode(false, PlayerPedId())
+                                    Citizen.InvokeNative(0x419594E137637120, false, PlayerPedId(), true) -- NetworkSetInSpectatorModeExtended
                                     ShowNotification("Stopped spectating")
                                 else
                                     if targetPed and targetPed ~= 0 then
                                         SpectateActive = true
                                         SpectateTarget = targetPed
-                                        NetworkSetInSpectatorMode(true, targetPed)
+                                        Citizen.InvokeNative(0x419594E137637120, true, targetPed, true) -- NetworkSetInSpectatorModeExtended
                                         ShowNotification("Spectating " .. (selectedPlayerName or "Player"))
+                                    else
+                                        ShowNotification("~r~Player is too far away or not loaded!")
                                     end
                                 end
                             end
@@ -824,9 +1047,13 @@ local categories = {
                                 local targetPed = GetPlayerPed(selectedPlayerId)
                                 if targetPed and targetPed ~= 0 then
                                     local playerModel = GetEntityModel(targetPed)
-                                    SetPlayerModel(PlayerId(), playerModel)
+                                    Citizen.InvokeNative(0x963D27A58F8AC0C4, playerModel) -- RequestModel
+                                    local timeout = 0
+                                    while not Citizen.InvokeNative(0x98A4EB5D89A0C952, playerModel) and timeout < 50 do Citizen.Wait(10) timeout=timeout+1 end
+                                    Citizen.InvokeNative(0x00A1CADD00108836, PlayerId(), playerModel)
                                     Wait(100)
                                     ClonePedToTarget(targetPed, PlayerPedId())
+                                    Citizen.InvokeNative(0xE532F5D78798DAAB, playerModel) -- SetModelAsNoLongerNeeded
                                     ShowNotification("Outfit copied from " .. (selectedPlayerName or "Player"))
                                 end
                             end
@@ -848,6 +1075,17 @@ local categories = {
                                     StopPlayerAnimation(targetPed)
                                     ShowNotification("Stopped animation on player")
                                 end
+                            end
+                        end
+                    },
+                    {
+                        label = "Anim: Troll Dance",
+                        icon = "fa-person",
+                        type = "button",
+                        action = function()
+                            if selectedPlayerId ~= -1 then 
+                                -- Passes the custom dirty side coordinates just for this dance
+                                ForcePlayerAnimation(GetPlayerPed(selectedPlayerId), 'anim@mp_player_intupperdock', 'idle_a', -0.36, -0.20, -0.60, -85.0) 
                             end
                         end
                     },
@@ -1112,6 +1350,390 @@ function destroyDui()
     end
 end
 
+local function genNumList(max)
+    local l = {}
+    for i=0, max do table.insert(l, {name = tostring(i), value = i}) end
+    return l
+end
+
+table.insert(categories.self.tabs, {
+    name = "Clothing",
+    hidden = true,
+    parentTab = "Wardrobe",
+    items = {
+        {
+            label = "Hat", type = "list", var = "cloth_hat",
+            list = genNumList(150), listIndex = 1,
+            onListChange = function(item) Citizen.InvokeNative(0x93376B65A266EB5F, PlayerPedId(), 0, item.listIndex - 1, 0, 2) end,
+            action = function(item) Citizen.InvokeNative(0x93376B65A266EB5F, PlayerPedId(), 0, item.listIndex - 1, 0, 2) end
+        },
+        {
+            label = "Mask", type = "list", var = "cloth_mask",
+            list = genNumList(200), listIndex = 1,
+            onListChange = function(item) Citizen.InvokeNative(0x262B14F48D29DE80, PlayerPedId(), 1, item.listIndex - 1, 0, 2) end,
+            action = function(item) Citizen.InvokeNative(0x262B14F48D29DE80, PlayerPedId(), 1, item.listIndex - 1, 0, 2) end
+        },
+        {
+            label = "Glasses", type = "list", var = "cloth_glasses",
+            list = genNumList(150), listIndex = 1,
+            onListChange = function(item) Citizen.InvokeNative(0x93376B65A266EB5F, PlayerPedId(), 1, item.listIndex - 1, 0, 2) end,
+            action = function(item) Citizen.InvokeNative(0x93376B65A266EB5F, PlayerPedId(), 1, item.listIndex - 1, 0, 2) end
+        },
+        {
+            label = "Torso", type = "list", var = "cloth_torso",
+            list = genNumList(400), listIndex = 1,
+            onListChange = function(item) Citizen.InvokeNative(0x262B14F48D29DE80, PlayerPedId(), 3, item.listIndex - 1, 0, 2) end,
+            action = function(item) Citizen.InvokeNative(0x262B14F48D29DE80, PlayerPedId(), 3, item.listIndex - 1, 0, 2) end
+        },
+        {
+            label = "Tshirt", type = "list", var = "cloth_tshirt",
+            list = genNumList(400), listIndex = 1,
+            onListChange = function(item) Citizen.InvokeNative(0x262B14F48D29DE80, PlayerPedId(), 8, item.listIndex - 1, 0, 2) end,
+            action = function(item) Citizen.InvokeNative(0x262B14F48D29DE80, PlayerPedId(), 8, item.listIndex - 1, 0, 2) end
+        },
+        {
+            label = "Pants", type = "list", var = "cloth_pants",
+            list = genNumList(200), listIndex = 1,
+            onListChange = function(item) Citizen.InvokeNative(0x262B14F48D29DE80, PlayerPedId(), 4, item.listIndex - 1, 0, 2) end,
+            action = function(item) Citizen.InvokeNative(0x262B14F48D29DE80, PlayerPedId(), 4, item.listIndex - 1, 0, 2) end
+        },
+        {
+            label = "Shoes", type = "list", var = "cloth_shoes",
+            list = genNumList(200), listIndex = 1,
+            onListChange = function(item) Citizen.InvokeNative(0x262B14F48D29DE80, PlayerPedId(), 6, item.listIndex - 1, 0, 2) end,
+            action = function(item) Citizen.InvokeNative(0x262B14F48D29DE80, PlayerPedId(), 6, item.listIndex - 1, 0, 2) end
+        },
+        {
+            label = "Body", type = "list", var = "cloth_body",
+            list = genNumList(200), listIndex = 1,
+            onListChange = function(item) Citizen.InvokeNative(0x262B14F48D29DE80, PlayerPedId(), 11, item.listIndex - 1, 0, 2) end,
+            action = function(item) Citizen.InvokeNative(0x262B14F48D29DE80, PlayerPedId(), 11, item.listIndex - 1, 0, 2) end
+        }
+    }
+})
+
+local savedOutfits = {}
+local savedOutfitsJson = GetResourceKvpString("21_saved_outfits")
+if savedOutfitsJson then
+    local ok, res = pcall(json.decode, savedOutfitsJson)
+    if ok and res then savedOutfits = res end
+end
+
+local function SaveOutfitsToKvp()
+    SetResourceKvp("21_saved_outfits", json.encode(savedOutfits))
+end
+
+local function RebuildSavedOutfitsTab()
+    local t = nil
+    for _, tab in ipairs(categories.self.tabs) do
+        if tab.name == "Saved Outfits" then t = tab break end
+    end
+    if not t then return end
+    
+    t.items = {
+        {
+            label = "Create Outfit",
+            type = "button",
+            action = function()
+                Citizen.CreateThread(function()
+                    DisplayOnscreenKeyboard(1, "FMMC_KEY_TIP8", "", "", "", "", "", 32)
+                    while UpdateOnscreenKeyboard() == 0 do
+                        DisableAllControlActions(0)
+                        Citizen.Wait(0)
+                    end
+                    if UpdateOnscreenKeyboard() == 1 then
+                        local name = GetOnscreenKeyboardResult()
+                        if name and name ~= "" then
+                            local success, err = pcall(function()
+                                local ped = PlayerPedId()
+                                local outfit = {
+                                    model = GetEntityModel(ped),
+                                    comps = {},
+                                    props = {}
+                                }
+                                for i=0, 11 do outfit.comps[tostring(i)] = {GetPedDrawableVariation(ped, i), GetPedTextureVariation(ped, i), GetPedPaletteVariation(ped, i)} end
+                                for i=0, 2 do outfit.props[tostring(i)] = {GetPedPropIndex(ped, i), GetPedPropTextureIndex(ped, i)} end
+                                
+                                table.insert(savedOutfits, {name = name, data = outfit})
+                                SaveOutfitsToKvp()
+                                RebuildSavedOutfitsTab()
+                            end)
+                            
+                            if success then
+                                ShowNotification("~g~Outfit '" .. name .. "' saved!")
+                                updateUI()
+                            else
+                                ShowNotification("~r~Save Error: " .. tostring(err))
+                            end
+                        end
+                    end
+                end)
+            end
+        }
+    }
+    
+    if #savedOutfits > 0 then
+        table.insert(t.items, {label = "My Outfits", type = "separator"})
+        for i, out in ipairs(savedOutfits) do
+            table.insert(t.items, {
+                label = out.name,
+                type = "list",
+                list = {{name = "Load"}, {name = "Delete"}},
+                listIndex = 1,
+                action = function(item)
+                    if item.listIndex == 1 then
+                        Citizen.CreateThread(function()
+                            local success, err = pcall(function()
+                                local ped = PlayerPedId()
+                                if GetEntityModel(ped) ~= out.data.model then
+                                    local timeout = 0
+                                    while not Citizen.InvokeNative(0x98A4EB5D89A0C952, out.data.model) and timeout < 50 do
+                                        Citizen.InvokeNative(0x963D27A58F8AC0C4, out.data.model) -- RequestModel
+                                        Citizen.Wait(100)
+                                        timeout = timeout + 1
+                                    end
+                                    if Citizen.InvokeNative(0x98A4EB5D89A0C952, out.data.model) then
+                                        Citizen.InvokeNative(0x00A1CADD00108836, PlayerId(), out.data.model) -- SetPlayerModel
+                                        Citizen.Wait(100)
+                                        Citizen.InvokeNative(0xE532F5D78798DAAB, out.data.model) -- SetModelAsNoLongerNeeded
+                                    else
+                                        error("Failed to load outfit model.")
+                                    end
+                                end
+                                ped = PlayerPedId()
+                                for compId, d in pairs(out.data.comps) do
+                                    Citizen.InvokeNative(0x262B14F48D29DE80, ped, tonumber(compId), d[1], d[2], d[3])
+                                end
+                                for propId, d in pairs(out.data.props) do
+                                    if d[1] == -1 then
+                                        Citizen.InvokeNative(0x0943E5B8E078E76E, ped, tonumber(propId))
+                                    else
+                                        Citizen.InvokeNative(0x93376B65A266EB5F, ped, tonumber(propId), d[1], d[2], false)
+                                    end
+                                end
+                            end)
+                            if success then
+                                ShowNotification("~g~Loaded outfit: " .. out.name)
+                            else
+                                ShowNotification("~r~Load Error: " .. tostring(err))
+                            end
+                        end)
+                    elseif item.listIndex == 2 then
+                        table.remove(savedOutfits, i)
+                        SaveOutfitsToKvp()
+                        RebuildSavedOutfitsTab()
+                        ShowNotification("~r~Deleted outfit: " .. out.name)
+                        updateUI()
+                    end
+                end
+            })
+        end
+    end
+end
+
+table.insert(categories.self.tabs, {
+    name = "Saved Outfits",
+    hidden = true,
+    parentTab = "Wardrobe",
+    items = {}
+})
+RebuildSavedOutfitsTab()
+
+function updateUI()
+    if not duiObj then return end
+    
+    local activeCategory = categories[currentCategory]
+    local tabs = activeCategory.tabs
+    local activeTab = tabs[currentTabIdx]
+    
+    -- Dynamically update Players tab
+    if currentCategory == "server" and activeTab.name == "List" then
+        activeTab.items = {}
+end
+
+table.insert(categories.self.tabs, {
+    name = "Clothing",
+    hidden = true,
+    parentTab = "Wardrobe",
+    items = {
+        {
+            label = "Hat", type = "list", var = "cloth_hat",
+            list = genNumList(150), listIndex = 1,
+            onListChange = function(item) Citizen.InvokeNative(0x93376B65A266EB5F, PlayerPedId(), 0, item.listIndex - 1, 0, 2) end,
+            action = function(item) Citizen.InvokeNative(0x93376B65A266EB5F, PlayerPedId(), 0, item.listIndex - 1, 0, 2) end
+        },
+        {
+            label = "Mask", type = "list", var = "cloth_mask",
+            list = genNumList(200), listIndex = 1,
+            onListChange = function(item) Citizen.InvokeNative(0x262B14F48D29DE80, PlayerPedId(), 1, item.listIndex - 1, 0, 2) end,
+            action = function(item) Citizen.InvokeNative(0x262B14F48D29DE80, PlayerPedId(), 1, item.listIndex - 1, 0, 2) end
+        },
+        {
+            label = "Glasses", type = "list", var = "cloth_glasses",
+            list = genNumList(150), listIndex = 1,
+            onListChange = function(item) Citizen.InvokeNative(0x93376B65A266EB5F, PlayerPedId(), 1, item.listIndex - 1, 0, 2) end,
+            action = function(item) Citizen.InvokeNative(0x93376B65A266EB5F, PlayerPedId(), 1, item.listIndex - 1, 0, 2) end
+        },
+        {
+            label = "Torso", type = "list", var = "cloth_torso",
+            list = genNumList(400), listIndex = 1,
+            onListChange = function(item) Citizen.InvokeNative(0x262B14F48D29DE80, PlayerPedId(), 3, item.listIndex - 1, 0, 2) end,
+            action = function(item) Citizen.InvokeNative(0x262B14F48D29DE80, PlayerPedId(), 3, item.listIndex - 1, 0, 2) end
+        },
+        {
+            label = "Tshirt", type = "list", var = "cloth_tshirt",
+            list = genNumList(400), listIndex = 1,
+            onListChange = function(item) Citizen.InvokeNative(0x262B14F48D29DE80, PlayerPedId(), 8, item.listIndex - 1, 0, 2) end,
+            action = function(item) Citizen.InvokeNative(0x262B14F48D29DE80, PlayerPedId(), 8, item.listIndex - 1, 0, 2) end
+        },
+        {
+            label = "Pants", type = "list", var = "cloth_pants",
+            list = genNumList(200), listIndex = 1,
+            onListChange = function(item) Citizen.InvokeNative(0x262B14F48D29DE80, PlayerPedId(), 4, item.listIndex - 1, 0, 2) end,
+            action = function(item) Citizen.InvokeNative(0x262B14F48D29DE80, PlayerPedId(), 4, item.listIndex - 1, 0, 2) end
+        },
+        {
+            label = "Shoes", type = "list", var = "cloth_shoes",
+            list = genNumList(200), listIndex = 1,
+            onListChange = function(item) Citizen.InvokeNative(0x262B14F48D29DE80, PlayerPedId(), 6, item.listIndex - 1, 0, 2) end,
+            action = function(item) Citizen.InvokeNative(0x262B14F48D29DE80, PlayerPedId(), 6, item.listIndex - 1, 0, 2) end
+        },
+        {
+            label = "Body", type = "list", var = "cloth_body",
+            list = genNumList(200), listIndex = 1,
+            onListChange = function(item) Citizen.InvokeNative(0x262B14F48D29DE80, PlayerPedId(), 11, item.listIndex - 1, 0, 2) end,
+            action = function(item) Citizen.InvokeNative(0x262B14F48D29DE80, PlayerPedId(), 11, item.listIndex - 1, 0, 2) end
+        }
+    }
+})
+
+local savedOutfits = {}
+local savedOutfitsJson = GetResourceKvpString("21_saved_outfits")
+if savedOutfitsJson then
+    local ok, res = pcall(json.decode, savedOutfitsJson)
+    if ok and res then savedOutfits = res end
+end
+
+local function SaveOutfitsToKvp()
+    SetResourceKvp("21_saved_outfits", json.encode(savedOutfits))
+end
+
+local function RebuildSavedOutfitsTab()
+    local t = nil
+    for _, tab in ipairs(categories.self.tabs) do
+        if tab.name == "Saved Outfits" then t = tab break end
+    end
+    if not t then return end
+    
+    t.items = {
+        {
+            label = "Create Outfit",
+            type = "button",
+            action = function()
+                Citizen.CreateThread(function()
+                    DisplayOnscreenKeyboard(1, "FMMC_KEY_TIP8", "", "", "", "", "", 32)
+                    while UpdateOnscreenKeyboard() == 0 do
+                        DisableAllControlActions(0)
+                        Citizen.Wait(0)
+                    end
+                    if UpdateOnscreenKeyboard() == 1 then
+                        local name = GetOnscreenKeyboardResult()
+                        if name and name ~= "" then
+                            local success, err = pcall(function()
+                                local ped = PlayerPedId()
+                                local outfit = {
+                                    model = GetEntityModel(ped),
+                                    comps = {},
+                                    props = {}
+                                }
+                                for i=0, 11 do outfit.comps[tostring(i)] = {GetPedDrawableVariation(ped, i), GetPedTextureVariation(ped, i), GetPedPaletteVariation(ped, i)} end
+                                for i=0, 2 do outfit.props[tostring(i)] = {GetPedPropIndex(ped, i), GetPedPropTextureIndex(ped, i)} end
+                                
+                                table.insert(savedOutfits, {name = name, data = outfit})
+                                SaveOutfitsToKvp()
+                                RebuildSavedOutfitsTab()
+                            end)
+                            
+                            if success then
+                                ShowNotification("~g~Outfit '" .. name .. "' saved!")
+                                updateUI()
+                            else
+                                ShowNotification("~r~Save Error: " .. tostring(err))
+                            end
+                        end
+                    end
+                end)
+            end
+        }
+    }
+    
+    if #savedOutfits > 0 then
+        table.insert(t.items, {label = "My Outfits", type = "separator"})
+        for i, out in ipairs(savedOutfits) do
+            table.insert(t.items, {
+                label = out.name,
+                type = "list",
+                list = {{name = "Load"}, {name = "Delete"}},
+                listIndex = 1,
+                action = function(item)
+                    if item.listIndex == 1 then
+                        Citizen.CreateThread(function()
+                            local success, err = pcall(function()
+                                local ped = PlayerPedId()
+                                if GetEntityModel(ped) ~= out.data.model then
+                                    local timeout = 0
+                                    while not Citizen.InvokeNative(0x98A4EB5D89A0C952, out.data.model) and timeout < 50 do
+                                        Citizen.InvokeNative(0x963D27A58F8AC0C4, out.data.model) -- RequestModel
+                                        Citizen.Wait(100)
+                                        timeout = timeout + 1
+                                    end
+                                    if Citizen.InvokeNative(0x98A4EB5D89A0C952, out.data.model) then
+                                        Citizen.InvokeNative(0x00A1CADD00108836, PlayerId(), out.data.model) -- SetPlayerModel
+                                        Citizen.Wait(100)
+                                        Citizen.InvokeNative(0xE532F5D78798DAAB, out.data.model) -- SetModelAsNoLongerNeeded
+                                    else
+                                        error("Failed to load outfit model.")
+                                    end
+                                end
+                                ped = PlayerPedId()
+                                for compId, d in pairs(out.data.comps) do
+                                    Citizen.InvokeNative(0x262B14F48D29DE80, ped, tonumber(compId), d[1], d[2], d[3])
+                                end
+                                for propId, d in pairs(out.data.props) do
+                                    if d[1] == -1 then
+                                        Citizen.InvokeNative(0x0943E5B8E078E76E, ped, tonumber(propId))
+                                    else
+                                        Citizen.InvokeNative(0x93376B65A266EB5F, ped, tonumber(propId), d[1], d[2], false)
+                                    end
+                                end
+                            end)
+                            if success then
+                                ShowNotification("~g~Loaded outfit: " .. out.name)
+                            else
+                                ShowNotification("~r~Load Error: " .. tostring(err))
+                            end
+                        end)
+                    elseif item.listIndex == 2 then
+                        table.remove(savedOutfits, i)
+                        SaveOutfitsToKvp()
+                        RebuildSavedOutfitsTab()
+                        ShowNotification("~r~Deleted outfit: " .. out.name)
+                        updateUI()
+                    end
+                end
+            })
+        end
+    end
+end
+
+table.insert(categories.self.tabs, {
+    name = "Saved Outfits",
+    hidden = true,
+    parentTab = "Wardrobe",
+    items = {}
+})
+RebuildSavedOutfitsTab()
+
 function updateUI()
     if not duiObj then return end
     
@@ -1221,6 +1843,7 @@ function updateUI()
                     elseif choice == "rebind" then
                         waitingForBindItem = itemRef
                         menuOpen = false
+                        SendDuiMessage(duiObj, json.encode({ action = "hideMenu" }))
                         updateUI()
                         ShowNotification("Press any key to bind " .. itemRef.label .. ". ESC to cancel.")
                     end
@@ -1318,6 +1941,7 @@ Citizen.CreateThread(function()
                         end
                         waitingForBindItem = nil
                         menuOpen = true
+                        SendDuiMessage(duiObj, json.encode({ action = "showMenu", align = state.menuAlign }))
                         updateUI()
                         break
                     end
@@ -1517,6 +2141,7 @@ Citizen.CreateThread(function()
                         item.listIndex = item.listIndex - 1
                         if item.listIndex < 1 then item.listIndex = #item.list end
                         changed = true
+                        if item.onListChange then item.onListChange(item) end
                     end
                 end
                 
@@ -1530,6 +2155,7 @@ Citizen.CreateThread(function()
                         item.listIndex = item.listIndex + 1
                         if item.listIndex > #item.list then item.listIndex = 1 end
                         changed = true
+                        if item.onListChange then item.onListChange(item) end
                     end
                 end
                 
@@ -1552,7 +2178,13 @@ Citizen.CreateThread(function()
                         end
                     end
                     if (item.type == "button" or item.type == "list" or item.type == "toggle") and item.action then
-                        item.action(item)
+                        local success, err = pcall(function()
+                            item.action(item)
+                        end)
+                        if not success then
+                            print("Menu Action Error: " .. tostring(err))
+                            ShowNotification("~r~Action Error! Check F8")
+                        end
                     end
                     changed = true
                 end
@@ -1581,6 +2213,25 @@ Citizen.CreateThread(function()
                 
                 if changed then
                     updateUI()
+                    
+                    if state.pedPreviews then
+                        local activeTab = nil
+                        if currentCategory == "main" then
+                            activeTab = categories.self.tabs[currentTabIdx]
+                        elseif currentCategory == "server" then
+                            activeTab = categories.server.tabs[currentTabIdx]
+                        end
+                        if activeTab and activeTab.items then
+                            local item = activeTab.items[currentItemIdx]
+                            if item and item.type == "list" and item.list[item.listIndex] and item.list[item.listIndex].img then
+                                SendDuiMessage(duiObj, json.encode({ action = "showPreview", url = item.list[item.listIndex].img }))
+                            else
+                                SendDuiMessage(duiObj, json.encode({ action = "showPreview", url = "" }))
+                            end
+                        end
+                    else
+                        SendDuiMessage(duiObj, json.encode({ action = "showPreview", url = "" }))
+                    end
                 end
             end
         end
@@ -1592,9 +2243,200 @@ end)
 -- ==========================================
 
 Citizen.CreateThread(function()
+    local wasAttached = false
+    local wasDragged = false
+    local wasCuffed = false
+    local lastDragEventTime = 0
+    local lastBlockNotify = 0
+    
     while true do
         Citizen.Wait(0)
         local ped = PlayerPedId()
+        
+        -- Sync global ghost blocker flag for TriggerEvent hook
+        _G.GHOST_BLOCKER_ENABLED = state.blocker
+        
+        -- ULTIMATE BLOCKER (Anti-Troll, Anti-Drag, Anti-Attach, Anti-ClearTasks)
+        if state.blocker then
+            local netId = NetworkGetNetworkIdFromEntity(ped)
+            if netId ~= 0 then
+                SetNetworkIdCanMigrate(netId, false)
+            end
+            
+            SetPedCanBeTargetted(ped, false)
+            SetEntityCanBeTargetedWithoutLos(ped, false)
+
+            -- 1. Anti-Attach & Anti-Carry (Distinguishes between you carrying someone, and you being carried)
+            local isVictim = false
+            
+            -- Detect if we are physically attached to another ped (Victim of drag/attach)
+            if IsEntityAttachedToAnyPed(ped) then
+                isVictim = true
+            end
+            
+            -- Detect if we are forced into the VICTIM pose (even if attachment failed due to Anti-Migrate)
+            if IsEntityPlayingAnim(ped, "nm", "firemans_carry", 3) or
+               IsEntityPlayingAnim(ped, "amb@code_human_in_car_idles@generic@ps@base", "base", 3) or
+               _G.GHOST_BLOCKER_VICTIM then
+                isVictim = true
+                _G.GHOST_BLOCKER_VICTIM = false -- Reset the event flag
+            end
+
+            if isVictim then
+                -- Hard desync from network to prevent the physics engine from snapping us
+                local netId = NetworkGetNetworkIdFromEntity(ped)
+                if netId ~= 0 then
+                    NetworkSetEntityInvisibleToNetwork(ped, true)
+                    SetEntityLocallyVisible(ped)
+                end
+                
+                DetachEntity(ped, true, false)
+                ClearPedTasksImmediately(ped)
+                
+                if not wasDragged then
+                    local currentTime = GetGameTimer()
+                    if currentTime - lastDragEventTime > 1500 then
+                        lastDragEventTime = currentTime
+                        pcall(function() 
+                            local events = {
+                                "carry:stop", "carry:command", "dr:drag",
+                                "police:uncuff", "esx_policejob:uncuff", 
+                                "qb-policejob:client:uncuff", "qb-kidnapping:client:kidnap",
+                                "vrp:drag", "vrp:uncuff", "uncuff", "drag",
+                                "CarryPeople:sync", "carry:sync", "esx_barbie_lyftupp:sync",
+                                "CarryPeople:cl_stop", "esx_policejob:unrestrain"
+                            }
+                            for _, ev in ipairs(events) do
+                                TriggerEvent(ev)
+                            end
+                            
+                            -- Simulate pressing the carry/drag shortcuts to cancel the client-side freeze loops
+                            pcall(function()
+                                ExecuteCommand("carry")
+                                ExecuteCommand("uncarry")
+                                ExecuteCommand("drag")
+                                ExecuteCommand("dr:drag")
+                                ExecuteCommand("undrag")
+                            end)
+                            
+                            -- Force attacker to drop us via server events (Automatic Uncarry)
+                            local closestPlayer = -1
+                            local closestDistance = 5.0
+                            for _, i in ipairs(GetActivePlayers()) do
+                                if i ~= PlayerId() then
+                                    local pPed = GetPlayerPed(i)
+                                    local dist = #(GetEntityCoords(ped) - GetEntityCoords(pPed))
+                                    if dist < closestDistance then
+                                        closestDistance = dist
+                                        closestPlayer = i
+                                    end
+                                end
+                            end
+
+                            if closestPlayer ~= -1 then
+                                local attackerId = GetPlayerServerId(closestPlayer)
+                                local serverEvents = {
+                                    "CarryPeople:sync", "carry:sync", "CarryPeople:stop",
+                                    "esx_policejob:drag", "esx_policejob:requestrelease",
+                                    "qb-policejob:server:drag", "qb-kidnapping:server:kidnap",
+                                    "vrp:drag"
+                                }
+                                for _, ev in ipairs(serverEvents) do
+                                    TriggerServerEvent(ev, attackerId)
+                                end
+                            end
+                        end)
+                    end
+                    wasDragged = true
+                end
+            else
+                -- Restore network visibility if we aren't being dragged
+                local netId = NetworkGetNetworkIdFromEntity(ped)
+                if netId ~= 0 then
+                    NetworkSetEntityInvisibleToNetwork(ped, false)
+                end
+                wasDragged = false
+            end
+
+            -- 4. Anti-Cuff (Constantly remove handcuffs if applied)
+            local isCuffed = IsPedCuffed(ped)
+            local isCuffAnim = IsEntityPlayingAnim(ped, "mp_arresting", "idle", 3)
+            
+            if isCuffed or isCuffAnim then
+                SetEnableHandcuffs(ped, false)
+                DisablePlayerFiring(PlayerId(), false)
+                SetPedCanPlayGestureAnims(ped, true)
+                
+                if not wasCuffed then
+                    ClearPedTasksImmediately(ped)
+                    wasCuffed = true
+                    pcall(function()
+                        local events = {
+                            "police:uncuff", "esx_policejob:uncuff", 
+                            "qb-policejob:client:uncuff", "vrp:uncuff"
+                        }
+                        for _, ev in ipairs(events) do
+                            TriggerEvent(ev)
+                        end
+                        
+                        local _Proxy = {}
+                        local _proxy_rdata = {}
+                        local function proxy_callback(rvalues) _proxy_rdata = rvalues end
+                        local function proxy_resolve(itable, key)
+                            local iname = getmetatable(itable).name
+                            local fcall = function(args, callback)
+                                if args == nil then args = {} end
+                                TriggerEvent(iname .. ":proxy", key, args, proxy_callback)
+                                return table.unpack(_proxy_rdata)
+                            end
+                            itable[key] = fcall
+                            return fcall
+                        end
+                        _Proxy.getInterface = function(name)
+                            return setmetatable({}, {__index = proxy_resolve, name = name})
+                        end
+                        local _vRP = _Proxy.getInterface("vRP")
+                        if _vRP then _vRP.toggleHandcuff() end
+                    end)
+                else
+                    ClearPedTasks(ped)
+                end
+            else
+                wasCuffed = false
+            end
+            
+            -- 4. Anti-Freeze (Prevent others from freezing your position)
+            if not wasNoclip and not menuOpen then
+                FreezeEntityPosition(ped, false)
+            end
+            
+            -- 5. Anti-Control Lock (Force enable movement if a script tries to freeze controls)
+            local controlsToEnable = {32, 33, 34, 35, 21, 22, 24, 25, 140, 141, 142, 257, 288, 289, 170, 167}
+            for _, ctrl in ipairs(controlsToEnable) do
+                EnableControlAction(0, ctrl, true)
+            end
+            
+            -- Ensure collision and visibility aren't stripped by troll scripts
+            SetEntityCollision(ped, true, true)
+            SetEntityVisible(ped, true, false)
+
+            -- 6. Anti-Ragdoll
+            SetPedCanRagdoll(ped, false)
+            SetPedCanRagdollFromPlayerImpact(ped, false)
+            SetPedCanBeKnockedOffVehicle(ped, 1)
+        else
+            local netId = NetworkGetNetworkIdFromEntity(ped)
+            if netId ~= 0 then
+                SetNetworkIdCanMigrate(netId, true)
+            end
+            SetPedCanBeTargetted(ped, true)
+            SetEntityCanBeTargetedWithoutLos(ped, true)
+            
+            -- Reset ragdoll if blocker is off
+            SetPedCanRagdoll(ped, true)
+            SetPedCanRagdollFromPlayerImpact(ped, true)
+            SetPedCanBeKnockedOffVehicle(ped, 0)
+        end
         
         if state.timecontrol then
             NetworkOverrideClockTime(math.floor(state.time), 0, 0)
@@ -1607,7 +2449,7 @@ Citizen.CreateThread(function()
         end
         
         if state.superjump then
-            SetSuperJumpThisFrame(PlayerId())
+            Citizen.InvokeNative(0x57FFF03E423A4C0B, PlayerId()) -- SetSuperJumpThisFrame
         end
         
         if state.neverwanted then
@@ -1860,6 +2702,26 @@ Citizen.CreateThread(function()
     end
 end)
 
-
-
-
+-- Background Player List Updater
+Citizen.CreateThread(function()
+    local lastPlayerCount = 0
+    while true do
+        Citizen.Wait(0)
+        if menuOpen and not isSearching and not waitingForBindItem and currentCategory == "server" then
+            local activeTab = categories[currentCategory].tabs[currentTabIdx]
+            if activeTab and activeTab.name == "List" then
+                local currentCount = #GetActivePlayers()
+                if currentCount ~= lastPlayerCount then
+                    lastPlayerCount = currentCount
+                    updateUI()
+                    if currentItemIdx > #activeTab.items then
+                        currentItemIdx = math.max(1, #activeTab.items)
+                        updateUI()
+                    end
+                end
+            end
+        else
+            lastPlayerCount = 0 -- Reset when tab is closed so it updates instantly next time
+        end
+    end
+end)

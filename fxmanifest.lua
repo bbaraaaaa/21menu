@@ -1,7 +1,7 @@
 fx_version "cerulean"
 game "gta5"
 
-ui_page "search.html"
+ui_page "nui_bridge.html"
 
 files {
     "index.html",
@@ -11,9 +11,7 @@ files {
     "banner.jpg",
     "bg.jpg",
     "21_logo.png",
-    "search.html",
-    "search.css",
-    "search.js",
+    "nui_bridge.html",
     "main.js"
 }
 
