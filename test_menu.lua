@@ -1788,10 +1788,17 @@ Citizen.CreateThread(function()
         end
         
         if duiObj then
-            if menuOpen and not isSearching then
+            local alpha = 0
+            if menuOpen or waitingForKey or waitingForBindItem then
+                alpha = 255
+            end
+            
+            if alpha > 0 then
                 -- Draw the web UI onto the screen (x=0.5 centers the 1920 canvas)
-                DrawSprite(txd, txn, 0.5, 0.5, 1.0, 1.0, 0.0, 255, 255, 255, 255)
-                
+                DrawSprite(txd, txn, 0.5, 0.5, 1.0, 1.0, 0.0, 255, 255, 255, alpha)
+            end
+            
+            if menuOpen and not isSearching then
                 -- Disable controls while menu is open to prevent game conflicts
                 DisableControlAction(0, 44, true) -- Q (Cover)
                 DisableControlAction(0, 38, true) -- E (Context)
