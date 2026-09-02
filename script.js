@@ -197,7 +197,12 @@ window.addEventListener("message", function(event) {
                 itemsContainer.appendChild(itemEl);
 
                 if (isSelected) {
-                    itemEl.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+                    // Use setTimeout to ensure DOM is painted before scrolling, avoiding CEF rendering locks
+                    setTimeout(() => {
+                        if (itemsContainer.contains(itemEl)) {
+                            itemEl.scrollIntoView({ block: 'nearest' });
+                        }
+                    }, 10);
                 }
             });
         }
