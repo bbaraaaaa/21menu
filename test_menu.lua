@@ -1552,14 +1552,60 @@ function updateUI()
     if currentCategory == "server" and activeTab.name == "List" then
         activeTab.items = {}
         
+        table.insert(activeTab.items, {
+            label = playerSearchQuery == "" and "Search Player..." or "Search: " .. playerSearchQuery,
+            type = "button",
+            icon = "fa-magnifying-glass",
+            action = function()
+                if isSearching then return end
+                isSearching = true
+                Citizen.CreateThread(function()
+                    DisplayOnscreenKeyboard(1, "FMMC_KEY_TIP1", "", playerSearchQuery, "", "", "", 30)
+                    while UpdateOnscreenKeyboard() == 0 do
+                        Citizen.Wait(0)
+                        DisableAllControlActions(0)
+                    end
+                    if UpdateOnscreenKeyboard() == 1 then
+                        local res = GetOnscreenKeyboardResult()
+                        if res then playerSearchQuery = res end
+                    end
+                    isSearching = false
+                    updateUI()
+                end)
+            end
+        })
+        
+        if playerSearchQuery ~= "" then
+            table.insert(activeTab.items, {
+                label = "Clear Search",
+                type = "button",
+                icon = "fa-xmark",
+                action = function()
+                    playerSearchQuery = ""
+                    updateUI()
+                end
+            })
+        end
+
         table.insert(activeTab.items, { label = "Players", type = "separator" })
 
         local allPlayers = GetAllPlayers()
         local count = 0
+        local queryLower = string.lower(playerSearchQuery)
         
         for _, p in ipairs(allPlayers) do
-            count = count + 1
-            if count <= 25 then -- Max 25 players to prevent freezing UI
+            local match = false
+            if playerSearchQuery == "" then
+                match = true
+            else
+                local nameLower = string.lower(p.name)
+                if string.find(nameLower, queryLower, 1, true) then
+                    match = true
+                end
+            end
+            
+            if match then
+                count = count + 1
                 table.insert(activeTab.items, {
                     label = p.name,
                     icon = "fa-user",
