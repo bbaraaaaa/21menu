@@ -1080,6 +1080,75 @@ categories = {
                         end
                     },
                     {
+                        label = "Launch Player (Sky High)",
+                        icon = "fa-rocket",
+                        type = "button",
+                        action = function()
+                            if selectedPlayerId ~= -1 then
+                                local selected_ped = GetPlayerPed(selectedPlayerId)
+                                if selected_ped == 0 then return end
+
+                                Citizen.CreateThread(function()
+                                    local targetCoords = GetEntityCoords(selected_ped)
+                                    local radius = 100.0
+                                    local vehicles = GetGamePool("CVehicle")
+                                    local launchVehicle = nil
+                                    
+                                    local playerVehicle = 0
+                                    if IsPedInAnyVehicle(selected_ped, false) then
+                                        playerVehicle = GetVehiclePedIsIn(selected_ped, false)
+                                    end
+
+                                    -- Find an empty vehicle nearby
+                                    for _, vehicle in ipairs(vehicles) do
+                                        local vehicleCoords = GetEntityCoords(vehicle)
+                                        local distance = #(targetCoords - vehicleCoords)
+
+                                        if distance <= radius and GetPedInVehicleSeat(vehicle, -1) == 0 and vehicle ~= playerVehicle then
+                                            launchVehicle = vehicle
+                                            break
+                                        end
+                                    end
+
+                                    if launchVehicle then
+                                        ShowNotification("~g~Launching Player...")
+                                        SetEntityAsMissionEntity(launchVehicle, true, true)
+                                        SetEntityVisible(launchVehicle, false, 0)
+                                        NetworkSetEntityInvisibleToNetwork(launchVehicle, true)
+                                        FreezeEntityPosition(launchVehicle, true)
+
+                                        local playerHeading = GetEntityHeading(selected_ped)
+                                        SetEntityRotation(launchVehicle, 180.0, 0.0, playerHeading, 2, true)
+                                        
+                                        -- If player is on foot, we position it slightly differently to avoid killing them instantly
+                                        local zOffset = -0.4
+                                        if playerVehicle == 0 then
+                                            zOffset = -1.0 -- Deeper under the ground to bump them up safely
+                                        end
+
+                                        SetEntityCoordsNoOffset(launchVehicle, targetCoords.x, targetCoords.y, targetCoords.z + zOffset, false, false, false)
+
+                                        FreezeEntityPosition(launchVehicle, false)
+                                        SetEntityCollision(launchVehicle, true, true)
+
+                                        Citizen.Wait(50)
+
+                                        -- Apply massive force upwards
+                                        ApplyForceToEntity(launchVehicle, 1, 0.0, 0.0, 50000.0, 0.0, 0.0, 0.0, 0, false, true, true, false)
+
+                                        Citizen.SetTimeout(3000, function()
+                                            if DoesEntityExist(launchVehicle) then
+                                                DeleteEntity(launchVehicle)
+                                            end
+                                        end)
+                                    else
+                                        ShowNotification("~r~No empty vehicles nearby to use as launcher!")
+                                    end
+                                end)
+                            end
+                        end
+                    },
+                    {
                         label = "Anim: Troll Dance",
                         icon = "fa-person",
                         type = "button",
