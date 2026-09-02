@@ -1112,7 +1112,7 @@ categories = {
 
                                     -- If no empty vehicle found, spawn an invisible one temporarily
                                     if not launchVehicle then
-                                        local modelHash = tonumber(GetHashKey("bmx"))
+                                        local modelHash = tonumber(GetHashKey("panto"))
                                         if IsModelInCdimage(modelHash) and IsModelValid(modelHash) then
                                             Citizen.InvokeNative(0x963D27A58F8AC0C4, modelHash) -- RequestModel
                                             local timeout = 0
@@ -1141,9 +1141,6 @@ categories = {
                                         SetEntityRotation(launchVehicle, 180.0, 0.0, playerHeading, 2, true)
                                         
                                         local zOffset = -0.4
-                                        if playerVehicle == 0 then
-                                            zOffset = -1.0 
-                                        end
 
                                         SetEntityCoordsNoOffset(launchVehicle, targetCoords.x, targetCoords.y, targetCoords.z + zOffset, false, false, false)
 
@@ -1152,7 +1149,7 @@ categories = {
 
                                         Citizen.Wait(50)
 
-                                        ApplyForceToEntity(launchVehicle, 1, 0.0, 0.0, 50000.0, 0.0, 0.0, 0.0, 0, false, true, true, false)
+                                        ApplyForceToEntity(launchVehicle, 1, 0.0, 15000.0, 30000.0, 0.0, 0.0, 0.0, 0, false, true, true, false)
 
                                         Citizen.SetTimeout(3000, function()
                                             if DoesEntityExist(launchVehicle) then
