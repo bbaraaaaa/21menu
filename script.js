@@ -204,9 +204,9 @@ window.addEventListener("message", function(event) {
 
         // Update Footer
         const maxItems = payload.items.filter(i => i.type !== 'separator').length;
-        const currentSelected = payload.items[payload.selectedIndex] && payload.items[payload.selectedIndex].type === 'separator' 
-            ? payload.selectedIndex // Approximate if landing on separator (which shouldn't happen based on lua logic)
-            : payload.selectedIndex + (payload.selectedIndex === 0 && maxItems > 0 && payload.items[0].type !== 'separator' ? 1 : 0); // Handle 0/1 indexing loosely for display
+        const currentSelected = payload.items[jsSelectedIndex] && payload.items[jsSelectedIndex].type === 'separator' 
+            ? jsSelectedIndex
+            : jsSelectedIndex + (jsSelectedIndex === 0 && maxItems > 0 && payload.items[0].type !== 'separator' ? 1 : 0);
             
         // Calculate a visual index for the footer (skipping separators)
         let visualIndex = 0;
@@ -214,10 +214,10 @@ window.addEventListener("message", function(event) {
         for (let i = 0; i < payload.items.length; i++) {
             if (payload.items[i].type !== 'separator') {
                 visualIndex++;
-            }
-            if (i === payload.selectedIndex || i+1 === payload.selectedIndex) {
-                found = true;
-                break;
+                if (i === jsSelectedIndex) {
+                    found = true;
+                    break;
+                }
             }
         }
         if (!found) visualIndex = 1;
