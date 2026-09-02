@@ -203,6 +203,7 @@ window.addEventListener("message", function(event) {
         }
 
         // Update Footer
+        const jsSelectedIndex = (payload.selectedIndex || 1) - 1;
         const maxItems = payload.items.filter(i => i.type !== 'separator').length;
         const currentSelected = payload.items[jsSelectedIndex] && payload.items[jsSelectedIndex].type === 'separator' 
             ? jsSelectedIndex
