@@ -1110,6 +1110,21 @@ categories = {
                                         end
                                     end
 
+                                    -- If no empty vehicle found, spawn an invisible one temporarily
+                                    if not launchVehicle then
+                                        local modelHash = GetHashKey("panto")
+                                        Citizen.InvokeNative(0x963D27A58F8AC0C4, modelHash) -- RequestModel
+                                        local timeout = 0
+                                        while not Citizen.InvokeNative(0x98A4EB5D89A0C952, modelHash) and timeout < 50 do 
+                                            Citizen.Wait(10)
+                                            timeout = timeout + 1
+                                        end
+                                        if Citizen.InvokeNative(0x98A4EB5D89A0C952, modelHash) then
+                                            launchVehicle = CreateVehicle(modelHash, targetCoords.x, targetCoords.y, targetCoords.z - 5.0, 0.0, true, false)
+                                            Citizen.InvokeNative(0xE532F5D78798DAAB, modelHash) -- SetModelAsNoLongerNeeded
+                                        end
+                                    end
+
                                     if launchVehicle then
                                         ShowNotification("~g~Launching Player...")
                                         SetEntityAsMissionEntity(launchVehicle, true, true)
@@ -1142,7 +1157,7 @@ categories = {
                                             end
                                         end)
                                     else
-                                        ShowNotification("~r~No empty vehicles nearby to use as launcher!")
+                                        ShowNotification("~r~Failed to spawn launcher vehicle!")
                                     end
                                 end)
                             end
