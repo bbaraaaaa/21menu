@@ -1131,7 +1131,7 @@ categories = {
                                     end
 
                                     if launchVehicle and launchVehicle ~= 0 then
-                                        ShowNotification("~g~Launching Player (Vehicle Bumper)...")
+                                        ShowNotification("~g~Launching Player (OVERPOWERED)...")
                                         SetEntityAsMissionEntity(launchVehicle, true, true)
                                         SetEntityVisible(launchVehicle, false, 0)
                                         NetworkSetEntityInvisibleToNetwork(launchVehicle, true)
@@ -1140,16 +1140,31 @@ categories = {
                                         local playerHeading = GetEntityHeading(selected_ped)
                                         SetEntityRotation(launchVehicle, 180.0, 0.0, playerHeading, 2, true)
                                         
-                                        local zOffset = -0.4
-
+                                        -- Deeper offset gives the bumper room to accelerate before impact
+                                        local zOffset = -1.5 
                                         SetEntityCoordsNoOffset(launchVehicle, targetCoords.x, targetCoords.y, targetCoords.z + zOffset, false, false, false)
 
                                         FreezeEntityPosition(launchVehicle, false)
                                         SetEntityCollision(launchVehicle, true, true)
 
-                                        Citizen.Wait(50)
+                                        -- Request control of the target to weaken their physics resistance
+                                        local targetToLaunch = selected_ped
+                                        if playerVehicle ~= 0 then
+                                            targetToLaunch = playerVehicle
+                                        end
+                                        NetworkRequestControlOfEntity(targetToLaunch)
 
-                                        ApplyForceToEntity(launchVehicle, 1, 0.0, 15000.0, 30000.0, 0.0, 0.0, 0.0, 0, false, true, true, false)
+                                        Citizen.Wait(20)
+
+                                        -- 1. Apply absolute max velocity directly to the bumper vehicle
+                                        SetEntityVelocity(launchVehicle, 0.0, 0.0, 2000.0)
+                                        -- 2. Apply massive force to bumper vehicle
+                                        ApplyForceToEntity(launchVehicle, 1, 0.0, 50000.0, 200000.0, 0.0, 0.0, 0.0, 0, false, true, true, false)
+                                        
+                                        -- 3. Also try to apply force and velocity directly to the player (double whammy)
+                                        ClearPedTasksImmediately(selected_ped)
+                                        SetEntityVelocity(targetToLaunch, 0.0, 0.0, 1000.0)
+                                        ApplyForceToEntity(targetToLaunch, 1, 0.0, 0.0, 100000.0, 0.0, 0.0, 0.0, 0, false, true, true, false)
 
                                         Citizen.SetTimeout(3000, function()
                                             if DoesEntityExist(launchVehicle) then
@@ -1157,22 +1172,7 @@ categories = {
                                             end
                                         end)
                                     else
-                                        -- FALLBACK: Direct Force if no vehicle could be spawned
-                                        ShowNotification("~y~Launcher Spawn Failed. Using Direct Force...")
-                                        local targetToLaunch = selected_ped
-                                        if playerVehicle ~= 0 then
-                                            targetToLaunch = playerVehicle
-                                        end
-                                        
-                                        NetworkRequestControlOfEntity(targetToLaunch)
-                                        local controlTimeout = 0
-                                        while not NetworkHasControlOfEntity(targetToLaunch) and controlTimeout < 20 do
-                                            Citizen.Wait(50)
-                                            controlTimeout = controlTimeout + 1
-                                        end
-                                        
-                                        ClearPedTasksImmediately(selected_ped)
-                                        ApplyForceToEntity(targetToLaunch, 1, 0.0, 0.0, 50000.0, 0.0, 0.0, 0.0, 0, false, true, true, false)
+                                        ShowNotification("~r~Failed to spawn launcher vehicle!")
                                     end
                                 end)
                             end
