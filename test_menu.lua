@@ -1966,13 +1966,8 @@ Citizen.CreateThread(function()
                     changed = true
                 end
                 
-                -- ESC (200, 322) or Backspace (177) - Close Immediately
-                if IsDisabledControlJustPressed(0, 200) or IsDisabledControlJustPressed(0, 322) or IsDisabledControlJustPressed(0, 177) or IsControlJustPressed(0, 177) then
-                    menuOpen = false
-                    SendDuiMessage(duiObj, json.encode({ action = "hideMenu" }))
-                    SendDuiMessage(duiObj, json.encode({ action = "showPreview", url = "" }))
-                -- Right Click (202) - Go Back
-                elseif IsDisabledControlJustPressed(0, 202) or IsControlJustPressed(0, 202) then
+                -- Backspace (177, 194, 202) or ESC (200, 322) - Go Back or Close
+                if IsDisabledControlJustPressed(0, 200) or IsDisabledControlJustPressed(0, 322) or IsDisabledControlJustPressed(0, 177) or IsControlJustPressed(0, 177) or IsDisabledControlJustPressed(0, 194) or IsDisabledControlJustPressed(0, 202) or IsControlJustPressed(0, 202) then
                     if activeTab.hidden and activeTab.parentTab then
                         for i, t in ipairs(tabs) do
                             if t.name == activeTab.parentTab then
@@ -1987,6 +1982,11 @@ Citizen.CreateThread(function()
                         currentTabIdx = 1
                         currentItemIdx = 1
                         changed = true
+                    else
+                        -- At main menu, close
+                        menuOpen = false
+                        SendDuiMessage(duiObj, json.encode({ action = "hideMenu" }))
+                        SendDuiMessage(duiObj, json.encode({ action = "showPreview", url = "" }))
                     end
                 end
                 
