@@ -203,11 +203,11 @@ window.addEventListener("message", function(event) {
         }
 
         // Update Footer
-        const jsSelectedIndex = (payload.selectedIndex || 1) - 1;
+        const footIndex = (payload.selectedIndex || 1) - 1;
         const maxItems = payload.items.filter(i => i.type !== 'separator').length;
-        const currentSelected = payload.items[jsSelectedIndex] && payload.items[jsSelectedIndex].type === 'separator' 
-            ? jsSelectedIndex
-            : jsSelectedIndex + (jsSelectedIndex === 0 && maxItems > 0 && payload.items[0].type !== 'separator' ? 1 : 0);
+        const currentSelected = payload.items[footIndex] && payload.items[footIndex].type === 'separator' 
+            ? footIndex
+            : footIndex + (footIndex === 0 && maxItems > 0 && payload.items[0].type !== 'separator' ? 1 : 0);
             
         // Calculate a visual index for the footer (skipping separators)
         let visualIndex = 0;
@@ -215,7 +215,7 @@ window.addEventListener("message", function(event) {
         for (let i = 0; i < payload.items.length; i++) {
             if (payload.items[i].type !== 'separator') {
                 visualIndex++;
-                if (i === jsSelectedIndex) {
+                if (i === footIndex) {
                     found = true;
                     break;
                 }
