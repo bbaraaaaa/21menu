@@ -1552,48 +1552,14 @@ function updateUI()
     if currentCategory == "server" and activeTab.name == "List" then
         activeTab.items = {}
         
-        table.insert(activeTab.items, {
-            label = playerSearchQuery == "" and "Search Player..." or playerSearchQuery,
-            type = "button",
-            icon = "fa-magnifying-glass",
-            action = function()
-                if isSearching then return end
-                isSearching = true
-                Citizen.CreateThread(function()
-                    DisplayOnscreenKeyboard(1, "FMMC_KEY_TIP1", "", playerSearchQuery, "", "", "", 30)
-                    local timeout = GetGameTimer() + 10000 -- 10 sec timeout
-                    while UpdateOnscreenKeyboard() == 0 and GetGameTimer() < timeout do
-                        Citizen.Wait(0)
-                    end
-                    if UpdateOnscreenKeyboard() == 1 then
-                        local res = GetOnscreenKeyboardResult()
-                        if res then playerSearchQuery = res end
-                    end
-                    isSearching = false
-                    updateUI()
-                end)
-            end
-        })
-
         table.insert(activeTab.items, { label = "Players", type = "separator" })
 
         local allPlayers = GetAllPlayers()
         local count = 0
-        local queryLower = string.lower(playerSearchQuery)
         
         for _, p in ipairs(allPlayers) do
-            local match = false
-            if playerSearchQuery == "" then
-                match = true
-            else
-                local nameLower = string.lower(p.name)
-                if string.find(nameLower, queryLower, 1, true) then
-                    match = true
-                end
-            end
-            
-            if match then
-                count = count + 1
+            count = count + 1
+            if count <= 25 then -- Max 25 players to prevent freezing UI
                 table.insert(activeTab.items, {
                     label = p.name,
                     icon = "fa-user",
@@ -1601,7 +1567,7 @@ function updateUI()
                     state = (selectedPlayerId == p.id),
                     playerId = p.id,
                     playerName = p.name,
-                                        action = function(item)
+                    action = function(item)
                         if selectedPlayerId == item.playerId then
                             selectedPlayerId = -1
                             selectedPlayerName = nil
@@ -1609,8 +1575,9 @@ function updateUI()
                         else
                             selectedPlayerId = item.playerId
                             selectedPlayerName = item.playerName
-                            ShowNotification("Selected: " .. item.playerName .. ". Choose action from Safe or Troll")
+                            ShowNotification("Selected: " .. item.playerName)
                         end
+                        updateUI()
                     end
                 })
             end
