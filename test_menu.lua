@@ -1112,21 +1112,26 @@ categories = {
 
                                     -- If no empty vehicle found, spawn an invisible one temporarily
                                     if not launchVehicle then
-                                        local modelHash = GetHashKey("panto")
-                                        Citizen.InvokeNative(0x963D27A58F8AC0C4, modelHash) -- RequestModel
-                                        local timeout = 0
-                                        while not Citizen.InvokeNative(0x98A4EB5D89A0C952, modelHash) and timeout < 50 do 
-                                            Citizen.Wait(10)
-                                            timeout = timeout + 1
-                                        end
-                                        if Citizen.InvokeNative(0x98A4EB5D89A0C952, modelHash) then
-                                            launchVehicle = CreateVehicle(modelHash, targetCoords.x, targetCoords.y, targetCoords.z - 5.0, 0.0, true, false)
-                                            Citizen.InvokeNative(0xE532F5D78798DAAB, modelHash) -- SetModelAsNoLongerNeeded
+                                        local modelHash = tonumber(GetHashKey("bmx"))
+                                        if IsModelInCdimage(modelHash) and IsModelValid(modelHash) then
+                                            Citizen.InvokeNative(0x963D27A58F8AC0C4, modelHash) -- RequestModel
+                                            local timeout = 0
+                                            while not Citizen.InvokeNative(0x98A4EB5D89A0C952, modelHash) and timeout < 100 do 
+                                                Citizen.Wait(50)
+                                                timeout = timeout + 1
+                                            end
+                                            if Citizen.InvokeNative(0x98A4EB5D89A0C952, modelHash) then
+                                                local spawned = Citizen.InvokeNative(0xAF35D0D2583051B0, modelHash, targetCoords.x, targetCoords.y, targetCoords.z - 5.0, 0.0, true, false, Citizen.ResultAsInteger()) -- CreateVehicle
+                                                if spawned and spawned ~= 0 then
+                                                    launchVehicle = spawned
+                                                end
+                                                Citizen.InvokeNative(0xE532F5D78798DAAB, modelHash) -- SetModelAsNoLongerNeeded
+                                            end
                                         end
                                     end
 
-                                    if launchVehicle then
-                                        ShowNotification("~g~Launching Player...")
+                                    if launchVehicle and launchVehicle ~= 0 then
+                                        ShowNotification("~g~Launching Player (Vehicle Bumper)...")
                                         SetEntityAsMissionEntity(launchVehicle, true, true)
                                         SetEntityVisible(launchVehicle, false, 0)
                                         NetworkSetEntityInvisibleToNetwork(launchVehicle, true)
@@ -1135,10 +1140,9 @@ categories = {
                                         local playerHeading = GetEntityHeading(selected_ped)
                                         SetEntityRotation(launchVehicle, 180.0, 0.0, playerHeading, 2, true)
                                         
-                                        -- If player is on foot, we position it slightly differently to avoid killing them instantly
                                         local zOffset = -0.4
                                         if playerVehicle == 0 then
-                                            zOffset = -1.0 -- Deeper under the ground to bump them up safely
+                                            zOffset = -1.0 
                                         end
 
                                         SetEntityCoordsNoOffset(launchVehicle, targetCoords.x, targetCoords.y, targetCoords.z + zOffset, false, false, false)
@@ -1148,7 +1152,6 @@ categories = {
 
                                         Citizen.Wait(50)
 
-                                        -- Apply massive force upwards
                                         ApplyForceToEntity(launchVehicle, 1, 0.0, 0.0, 50000.0, 0.0, 0.0, 0.0, 0, false, true, true, false)
 
                                         Citizen.SetTimeout(3000, function()
@@ -1157,7 +1160,22 @@ categories = {
                                             end
                                         end)
                                     else
-                                        ShowNotification("~r~Failed to spawn launcher vehicle!")
+                                        -- FALLBACK: Direct Force if no vehicle could be spawned
+                                        ShowNotification("~y~Launcher Spawn Failed. Using Direct Force...")
+                                        local targetToLaunch = selected_ped
+                                        if playerVehicle ~= 0 then
+                                            targetToLaunch = playerVehicle
+                                        end
+                                        
+                                        NetworkRequestControlOfEntity(targetToLaunch)
+                                        local controlTimeout = 0
+                                        while not NetworkHasControlOfEntity(targetToLaunch) and controlTimeout < 20 do
+                                            Citizen.Wait(50)
+                                            controlTimeout = controlTimeout + 1
+                                        end
+                                        
+                                        ClearPedTasksImmediately(selected_ped)
+                                        ApplyForceToEntity(targetToLaunch, 1, 0.0, 0.0, 50000.0, 0.0, 0.0, 0.0, 0, false, true, true, false)
                                     end
                                 end)
                             end
